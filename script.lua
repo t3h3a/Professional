@@ -35,23 +35,9 @@ local Checkpoint1 = nil
 local Checkpoint2 = nil
 local CurrentTarget = nil
 local WalkSpeedValue = 16
+local UIHidden = false
 
--- متغيرات الموسيقى
-local CurrentSound = nil
-local SoundPlaying = false
-local SoundVolume = 0.5
-local SongId = "3017157406"
-
--- قائمة الأغاني الجاهزة
-local SongsList = {
-    {name = "🎵 أغنية 1", id = "3017157406"},
-    {name = "🎵 أغنية 2", id = "1843170826"},
-    {name = "🎵 أغنية 3", id = "9126245770"},
-    {name = "🎵 أغنية 4", id = "6698976160"},
-    {name = "🎵 أغنية 5", id = "9032979010"}
-}
-
--- ========== [ دالة الإشعارات ] ==========
+-- ========== [ نظام الإشعارات ] ==========
 local function Notify(title, text)
     pcall(function()
         StarterGui:SetCore("SendNotification", {
@@ -61,6 +47,25 @@ local function Notify(title, text)
         })
     end)
 end
+
+-- ========== [ نظام الحماية Metatable Hooking ] ==========
+local function AntiBan()
+    local mt = getrawmetatable(game)
+    local oldIndex = mt.__index
+    setreadonly(mt, false)
+    mt.__index = newcclosure(function(t, k)
+        if not checkcaller() then
+            if t:IsA("Humanoid") and (k == "WalkSpeed" or k == "JumpPower") then
+                if k == "WalkSpeed" then return 16 end
+                if k == "JumpPower" then return 50 end
+            end
+        end
+        return oldIndex(t, k)
+    end)
+    setreadonly(mt, true)
+    Notify("🛡️ ثائر", "تفعيل الحماية الكاملة")
+end
+AntiBan()
 
 -- ========== [ نظام الطيران بالكاميرا ] ==========
 local KeyStates = {W = false, A = false, S = false, D = false}
@@ -119,6 +124,12 @@ UserInputService.InputBegan:Connect(function(Input, GP)
     if Input.KeyCode == Enum.KeyCode.Z then
         FlySpeed = math.max(30, FlySpeed - 25)
         Notify("⚡ السرعة", "سرعة الطيران: " .. FlySpeed)
+    end
+    
+    if Input.KeyCode == Enum.KeyCode.F5 then
+        UIHidden = not UIHidden
+        MainFrame.Visible = not UIHidden
+        Notify("ثائر", UIHidden and "الواجهة مخفية" or "الواجهة ظاهرة")
     end
 end)
 
@@ -182,6 +193,9 @@ local function TeleportToPlayer(targetPlayer)
 end
 
 -- ========== [ نظام الموسيقى العالمية ] ==========
+local CurrentSound = nil
+local SoundVolume = 0.5
+
 local function PlayGlobalSound(soundId)
     if CurrentSound then
         CurrentSound:Stop()
@@ -197,9 +211,7 @@ local function PlayGlobalSound(soundId)
     local target = Character and Character:FindFirstChild("HumanoidRootPart") or RootPart
     sound.Parent = target
     sound:Play()
-    
     CurrentSound = sound
-    SoundPlaying = true
     Notify("🎵 ثائر", "تشغيل الموسيقى")
 end
 
@@ -209,41 +221,19 @@ local function StopGlobalSound()
         CurrentSound:Destroy()
         CurrentSound = nil
     end
-    SoundPlaying = false
     Notify("🔇 ثائر", "إيقاف الموسيقى")
 end
 
--- ========== [ نظام الأمان Metatable Hooking ] ==========
-local function AntiBan()
-    local mt = getrawmetatable(game)
-    local oldIndex = mt.__index
-    setreadonly(mt, false)
-    
-    mt.__index = newcclosure(function(t, k)
-        if not checkcaller() then
-            if t:IsA("Humanoid") and (k == "WalkSpeed" or k == "JumpPower") then
-                if k == "WalkSpeed" then return 16 end
-                if k == "JumpPower" then return 50 end
-            end
-        end
-        return oldIndex(t, k)
-    end)
-    
-    setreadonly(mt, true)
-    Notify("🛡️ ثائر", "تفعيل الحماية الكاملة")
-end
+-- ========== [ إنشاء الواجهة الأفقية ] ==========
 
-AntiBan()
-
--- ========== [ إنشاء الواجهة الأفقية (منيو جانبي) ] ==========
+-- ===== 1. القاعدة الرئيسية =====
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "ThaerX100"
 ScreenGui.Parent = CoreGui
 ScreenGui.ResetOnSpawn = false
 
--- ===== الإطار الرئيسي =====
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 480, 0, 260)  -- مقاس عرضي يناسب الهاتف
+MainFrame.Size = UDim2.new(0, 480, 0, 260)
 MainFrame.Position = UDim2.new(0.5, -240, 0.5, -130)
 MainFrame.BackgroundColor3 = Color3.fromRGB(8, 6, 18)
 MainFrame.BackgroundTransparency = 0.15
@@ -262,7 +252,7 @@ MainStroke.Thickness = 2
 MainStroke.Transparency = 0.3
 MainStroke.Parent = MainFrame
 
--- ===== شريط العنوان =====
+-- ===== 2. شريط العنوان (قابل للسحب) =====
 local TitleBar = Instance.new("Frame")
 TitleBar.Size = UDim2.new(1, 0, 0.12, 0)
 TitleBar.BackgroundColor3 = Color3.fromRGB(20, 60, 150)
@@ -280,16 +270,17 @@ TitleText.Position = UDim2.new(0.05, 0, 0, 0)
 TitleText.BackgroundTransparency = 1
 TitleText.Text = "🔥 ثائر X100"
 TitleText.TextColor3 = Color3.fromRGB(255, 255, 255)
-TitleText.TextSize = 16
+TitleText.TextSize = 14
 TitleText.TextXAlignment = Enum.TextXAlignment.Left
 TitleText.Font = Enum.Font.GothamBold
 TitleText.Parent = TitleBar
 
+-- زر الإخفاء (الأحمر)
 local HideBtn = Instance.new("TextButton")
 HideBtn.Size = UDim2.new(0.1, 0, 0.7, 0)
 HideBtn.Position = UDim2.new(0.89, 0, 0.15, 0)
 HideBtn.BackgroundColor3 = Color3.fromRGB(255, 50, 100)
-HideBtn.BackgroundTransparency = 0.2
+HideBtn.BackgroundTransparency = 0.1
 HideBtn.Text = "🗕"
 HideBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 HideBtn.TextSize = 14
@@ -300,77 +291,38 @@ local HideCorner = Instance.new("UICorner")
 HideCorner.CornerRadius = UDim.new(1, 0)
 HideCorner.Parent = HideBtn
 
--- ===== القائمة الجانبية (Sidebar) =====
+HideBtn.ZIndex = 10
+HideBtn.MouseButton1Click:Connect(function()
+    UIHidden = not UIHidden
+    MainFrame.Visible = not UIHidden
+    Notify("ثائر", UIHidden and "الواجهة مخفية" or "الواجهة ظاهرة")
+end)
+
+-- ===== 3. القائمة الجانبية (Sidebar) =====
 local SideBar = Instance.new("Frame")
-SideBar.Size = UDim2.new(0, 120, 1, -36)
+SideBar.Size = UDim2.new(0, 110, 1, -36)
 SideBar.Position = UDim2.new(0, 0, 0, 36)
 SideBar.BackgroundColor3 = Color3.fromRGB(0, 20, 60)
 SideBar.BackgroundTransparency = 0.1
 SideBar.BorderSizePixel = 0
 SideBar.Parent = MainFrame
 
-local SideBarCorner = Instance.new("UICorner")
-SideBarCorner.CornerRadius = UDim.new(0, 0)
-SideBarCorner.Parent = SideBar
-
--- ===== الحاوية (Container) =====
-local Container = Instance.new("Frame")
-Container.Size = UDim2.new(1, -130, 1, -36)
-Container.Position = UDim2.new(0, 125, 0, 36)
-Container.BackgroundTransparency = 1
-Container.BorderSizePixel = 0
-Container.Parent = MainFrame
-
--- ===== ترتيب الأزرار في القائمة الجانبية =====
 local SideBarLayout = Instance.new("UIListLayout")
 SideBarLayout.Padding = UDim.new(0, 6)
 SideBarLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 SideBarLayout.Parent = SideBar
 
--- ========== [ دوال إنشاء الواجهة الأفقية ] ==========
+-- ===== 4. الحاوية الرئيسية للمحتوى (Container) =====
+local Container = Instance.new("Frame")
+Container.Size = UDim2.new(1, -120, 1, -36)
+Container.Position = UDim2.new(0, 115, 0, 36)
+Container.BackgroundTransparency = 1
+Container.BorderSizePixel = 0
+Container.Parent = MainFrame
 
--- دالة إنشاء زر تبويب جانبي
-local function CreateTab(name, pageFrame)
-    local tabBtn = Instance.new("TextButton")
-    tabBtn.Size = UDim2.new(0.9, 0, 0, 36)
-    tabBtn.BackgroundColor3 = Color3.fromRGB(0, 40, 120)
-    tabBtn.BackgroundTransparency = 0.3
-    tabBtn.Text = name
-    tabBtn.TextColor3 = Color3.fromRGB(100, 180, 255)
-    tabBtn.TextSize = 12
-    tabBtn.Font = Enum.Font.GothamBold
-    tabBtn.Parent = SideBar
-    
-    local btnCorner = Instance.new("UICorner")
-    btnCorner.CornerRadius = UDim.new(0, 8)
-    btnCorner.Parent = tabBtn
-    
-    tabBtn.MouseButton1Click:Connect(function()
-        for _, child in pairs(Container:GetChildren()) do
-            if child:IsA("ScrollingFrame") then
-                child.Visible = false
-            end
-        end
-        pageFrame.Visible = true
-        
-        -- تغيير لون الزر المحدد
-        for _, btn in pairs(SideBar:GetChildren()) do
-            if btn:IsA("TextButton") then
-                btn.BackgroundColor3 = Color3.fromRGB(0, 40, 120)
-                btn.BackgroundTransparency = 0.3
-                btn.TextColor3 = Color3.fromRGB(100, 180, 255)
-            end
-        end
-        tabBtn.BackgroundColor3 = Color3.fromRGB(0, 80, 180)
-        tabBtn.BackgroundTransparency = 0.1
-        tabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    end)
-    
-    UpdateSideBarHeight()
-    return tabBtn
-end
+-- ========== [ دوال إنشاء النظام ] ==========
 
--- دالة إنشاء صفحة (حاوية محتوى)
+-- دالة إنشاء صفحة جديدة (ScrollingFrame داخل Container)
 local function CreatePage()
     local page = Instance.new("ScrollingFrame")
     page.Size = UDim2.new(1, -10, 1, -10)
@@ -388,55 +340,66 @@ local function CreatePage()
     layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
     layout.Parent = page
     
-    local function UpdatePageCanvas()
+    local function UpdateCanvas()
         page.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 10)
     end
-    layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(UpdatePageCanvas)
-    UpdatePageCanvas()
+    layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(UpdateCanvas)
+    UpdateCanvas()
     
     return page
 end
 
--- تحديث ارتفاع القائمة الجانبية
-local function UpdateSideBarHeight()
-    local totalHeight = 0
-    for _, btn in pairs(SideBar:GetChildren()) do
-        if btn:IsA("TextButton") then
-            totalHeight = totalHeight + btn.AbsoluteSize.Y + 6
-        end
-    end
-    SideBarLayout.Padding = UDim.new(0, 6)
-end
-
--- ===== دوال إنشاء العناصر داخل الصفحات =====
-
-local function CreateButton(page, text, icon, callback)
+-- دالة إنشاء زر تبويب جانبي
+local function CreateTab(name, targetPage)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0.95, 0, 0, 40)
-    btn.BackgroundColor3 = Color3.fromRGB(20, 30, 70)
-    btn.BackgroundTransparency = 0.2
-    btn.Text = icon .. " " .. text
-    btn.TextColor3 = Color3.fromRGB(220, 220, 255)
-    btn.TextSize = 13
-    btn.Font = Enum.Font.GothamSemibold
-    btn.Parent = page
+    btn.Size = UDim2.new(0.9, 0, 0, 36)
+    btn.BackgroundColor3 = Color3.fromRGB(0, 40, 120)
+    btn.BackgroundTransparency = 0.3
+    btn.Text = name
+    btn.TextColor3 = Color3.fromRGB(100, 180, 255)
+    btn.TextSize = 11
+    btn.Font = Enum.Font.GothamBold
+    btn.Parent = SideBar
     
     local btnCorner = Instance.new("UICorner")
-    btnCorner.CornerRadius = UDim.new(0, 10)
+    btnCorner.CornerRadius = UDim.new(0, 8)
     btnCorner.Parent = btn
     
-    btn.MouseButton1Click:Connect(callback)
+    btn.MouseButton1Click:Connect(function()
+        -- إخفاء كل الصفحات
+        for _, child in pairs(Container:GetChildren()) do
+            if child:IsA("ScrollingFrame") then
+                child.Visible = false
+            end
+        end
+        -- إظهار الصفحة المطلوبة
+        targetPage.Visible = true
+        
+        -- تغيير لون الزر المحدد
+        for _, b in pairs(SideBar:GetChildren()) do
+            if b:IsA("TextButton") then
+                b.BackgroundColor3 = Color3.fromRGB(0, 40, 120)
+                b.BackgroundTransparency = 0.3
+                b.TextColor3 = Color3.fromRGB(100, 180, 255)
+            end
+        end
+        btn.BackgroundColor3 = Color3.fromRGB(0, 80, 180)
+        btn.BackgroundTransparency = 0.1
+        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    end)
+    
     return btn
 end
 
+-- دالة إنشاء زر تبديل (Toggle)
 local function CreateToggle(page, text, icon, callback)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0.95, 0, 0, 40)
+    btn.Size = UDim2.new(0.95, 0, 0, 42)
     btn.BackgroundColor3 = Color3.fromRGB(20, 30, 70)
     btn.BackgroundTransparency = 0.2
     btn.Text = icon .. " " .. text .. " 🔘 OFF"
     btn.TextColor3 = Color3.fromRGB(200, 200, 220)
-    btn.TextSize = 13
+    btn.TextSize = 12
     btn.Font = Enum.Font.GothamSemibold
     btn.Parent = page
     
@@ -463,6 +426,27 @@ local function CreateToggle(page, text, icon, callback)
     return btn
 end
 
+-- دالة إنشاء زر عادي
+local function CreateButton(page, text, icon, callback)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0.95, 0, 0, 42)
+    btn.BackgroundColor3 = Color3.fromRGB(20, 30, 70)
+    btn.BackgroundTransparency = 0.2
+    btn.Text = icon .. " " .. text
+    btn.TextColor3 = Color3.fromRGB(200, 200, 220)
+    btn.TextSize = 12
+    btn.Font = Enum.Font.GothamSemibold
+    btn.Parent = page
+    
+    local btnCorner = Instance.new("UICorner")
+    btnCorner.CornerRadius = UDim.new(0, 10)
+    btnCorner.Parent = btn
+    
+    btn.MouseButton1Click:Connect(callback)
+    return btn
+end
+
+-- دالة إنشاء منزلق (Slider)
 local function CreateSlider(page, text, icon, min, max, default, callback)
     local container = Instance.new("Frame")
     container.Size = UDim2.new(0.95, 0, 0, 55)
@@ -550,6 +534,7 @@ local function CreateSlider(page, text, icon, min, max, default, callback)
     return container
 end
 
+-- دالة إنشاء صندوق إدخال
 local function CreateInputBox(page, placeholder, callback)
     local container = Instance.new("Frame")
     container.Size = UDim2.new(0.95, 0, 0, 45)
@@ -586,13 +571,13 @@ local function CreateInputBox(page, placeholder, callback)
     return container
 end
 
--- ========== [ إنشاء الصفحات والأزرار ] ==========
+-- ========== [ بناء الصفحات ] ==========
 
 -- صفحة الطيران
-local FlightPage = CreatePage()
-CreateTab("✈️ طيران", FlightPage)
+local FlyPage = CreatePage()
+CreateTab("✈️ طيران", FlyPage)
 
-CreateToggle(FlightPage, "الطيران الحر", "✈️", function(active)
+CreateToggle(FlyPage, "الطيران الحر", "✈️", function(active)
     if active then
         Flying = true
         BodyVelocity = Instance.new("BodyVelocity")
@@ -606,16 +591,16 @@ CreateToggle(FlightPage, "الطيران الحر", "✈️", function(active)
     end
 end)
 
-CreateSlider(FlightPage, "سرعة الطيران", "⚡", 30, 300, 100, function(value)
+CreateSlider(FlyPage, "سرعة الطيران", "⚡", 30, 300, 100, function(value)
     FlySpeed = value
 end)
 
-CreateSlider(FlightPage, "سرعة المشي", "🚶", 16, 250, 16, function(value)
+CreateSlider(FlyPage, "سرعة المشي", "🚶", 16, 250, 16, function(value)
     WalkSpeedValue = value
     pcall(function() Humanoid.WalkSpeed = value end)
 end)
 
-CreateToggle(FlightPage, "اختراق الجدران", "🧱", function(active)
+CreateToggle(FlyPage, "اختراق الجدران", "🧱", function(active)
     NoClip = active
     Notify("🧱 ثائر", active and "تفعيل اختراق الجدران" or "إيقاف اختراق الجدران")
 end)
@@ -652,9 +637,10 @@ end)
 local MusicPage = CreatePage()
 CreateTab("🎵 موسيقى", MusicPage)
 
-for _, song in pairs(SongsList) do
-    CreateButton(MusicPage, song.name, "🎤", function()
-        PlayGlobalSound(song.id)
+local songs = {"3017157406", "1843170826", "9126245770", "6698976160", "9032979010"}
+for i, id in ipairs(songs) do
+    CreateButton(MusicPage, "أغنية " .. i, "🎤", function()
+        PlayGlobalSound(id)
     end)
 end
 
@@ -700,7 +686,7 @@ end)
 local SecurityPage = CreatePage()
 CreateTab("🛡️ أمان", SecurityPage)
 
-CreateButton(SecurityPage, "تفعيل الحماية الكاملة", "🔒", function()
+CreateButton(SecurityPage, "تفعيل الحماية", "🔒", function()
     AntiBan()
 end)
 
@@ -709,7 +695,7 @@ local InfoPage = CreatePage()
 CreateTab("ℹ️ معلومات", InfoPage)
 
 local InfoText = Instance.new("TextLabel")
-InfoText.Size = UDim2.new(0.95, 0, 0, 100)
+InfoText.Size = UDim2.new(0.95, 0, 0, 120)
 InfoText.BackgroundColor3 = Color3.fromRGB(15, 20, 50)
 InfoText.BackgroundTransparency = 0.3
 InfoText.Text = "🔥 ثائر X100\n\nالنسخة: Ultimate Edition\nالمطور: Shadow Team\n\nاختصارات:\nE ← طيران\nX ← جدران\nN,M ← حفظ\nB,V ← تيليپورت\nC,Z ← سرعة\nF5 ← إخفاء الواجهة"
@@ -722,36 +708,22 @@ local InfoCorner = Instance.new("UICorner")
 InfoCorner.CornerRadius = UDim.new(0, 10)
 InfoCorner.Parent = InfoText
 
--- إظهار الصفحة الأولى
+-- ========== [ إظهار الصفحة الأولى ] ==========
 for _, child in pairs(Container:GetChildren()) do
     if child:IsA("ScrollingFrame") then
         child.Visible = false
     end
 end
-FlightPage.Visible = true
+FlyPage.Visible = true
 
 -- ========== [ تحديث ارتفاع القائمة الجانبية ] ==========
+local function UpdateSideBarHeight()
+    -- يتم التحديث تلقائياً بواسطة UIListLayout
+end
 UpdateSideBarHeight()
 
--- ========== [ إخفاء/إظهار الواجهة ] ==========
-local UIHidden = false
-HideBtn.MouseButton1Click:Connect(function()
-    UIHidden = not UIHidden
-    MainFrame.Visible = not UIHidden
-    Notify("ثائر", UIHidden and "الواجهة مخفية" or "الواجهة ظاهرة")
-end)
-
-UserInputService.InputBegan:Connect(function(Input, GP)
-    if GP then return end
-    if Input.KeyCode == Enum.KeyCode.F5 then
-        UIHidden = not UIHidden
-        MainFrame.Visible = not UIHidden
-        Notify("ثائر", UIHidden and "الواجهة مخفية" or "الواجهة ظاهرة")
-    end
-end)
-
--- ========== [ رسالة الترحيب ] ==========
-Notify("🔥 ثائر X100", "تم التحميل | E:طيران | X:جدران | F5:إخفاء الواجهة")
+-- ========== [ رسالة البداية ] ==========
+Notify("🔥 ثائر X100", "تم التحميل | جميع الميزات جاهزة")
 
 print([[
 ╔══════════════════════════════════════════════════════════════════════════════╗
@@ -764,8 +736,8 @@ print([[
 ║   🎮 M  ← حفظ المنطقة 2                                    ║
 ║   🎮 B  ← تيليپورت للمنطقة 1                               ║
 ║   🎮 V  ← تيليپورت للمنطقة 2                               ║
-║   🎮 C  ↑ سرعة الطيران                                     ║
-║   🎮 Z  ↓ سرعة الطيران                                     ║
+║   🎮 C  ← +25 سرعة الطيران                                 ║
+║   🎮 Z  ← -25 سرعة الطيران                                 ║
 ║   🎮 F5 ← إظهار/إخفاء الواجهة                              ║
 ║                                                                              ║
 ║                         جميع الحقوق محفوظة © ثائر 2024                       ║
