@@ -12,5 +12,6 @@
     "Rayfield"
   ],
   "Lua.completion.callSnippet": "Replace",
-  "Lua.telemetry.enable": false
+  "Lua.telemetry.enable": false,
+  "python-envs.defaultEnvManager": "ms-python.python:system"
 }
