@@ -35,6 +35,7 @@ local BodyGyro = nil
 local Checkpoint1 = nil
 local Checkpoint2 = nil
 local Checkpoint3 = nil
+local Checkpoints = {nil, nil, nil}
 local CurrentTarget = nil
 local WalkSpeedValue = 16
 local JumpPowerValue = 50
@@ -76,20 +77,23 @@ local KeyStates = {W = false, A = false, S = false, D = false}
 local function UpdateFlight()
     if not Flying or not BodyVelocity then return end
     
-    local moveDir = Vector3.new()
-    if KeyStates.W then moveDir = moveDir + Vector3.new(0, 0, -1) end
-    if KeyStates.S then moveDir = moveDir + Vector3.new(0, 0, 1) end
-    if KeyStates.A then moveDir = moveDir + Vector3.new(-1, 0, 0) end
-    if KeyStates.D then moveDir = moveDir + Vector3.new(1, 0, 0) end
+    Camera = workspace.CurrentCamera or Camera
+    local cameraCFrame = Camera.CFrame
+    local moveVector = Vector3.new()
+    if KeyStates.W then moveVector = moveVector + cameraCFrame.LookVector end
+    if KeyStates.S then moveVector = moveVector - cameraCFrame.LookVector end
+    if KeyStates.A then moveVector = moveVector - cameraCFrame.RightVector end
+    if KeyStates.D then moveVector = moveVector + cameraCFrame.RightVector end
+    if moveVector.Magnitude <= 0 and Humanoid.MoveDirection.Magnitude > 0 then
+        moveVector = Humanoid.MoveDirection
+    end
     
-    if moveDir.Magnitude > 0 then
-        moveDir = moveDir.Unit
-        local moveVector = (Camera.CFrame.LookVector * moveDir.Z + Camera.CFrame.RightVector * moveDir.X)
-        BodyVelocity.Velocity = moveVector * FlySpeed
+    if moveVector.Magnitude > 0 then
+        BodyVelocity.Velocity = moveVector.Unit * FlySpeed
         
         -- تحديث اتجاه الجيروسكوب للحفاظ على التوازن
         if BodyGyro then
-            BodyGyro.CFrame = RootPart.CFrame
+            BodyGyro.CFrame = CFrame.new(RootPart.Position, RootPart.Position + cameraCFrame.LookVector)
             BodyGyro.D = 15e3
         end
     else
@@ -112,7 +116,12 @@ local function StartFly()
     BodyGyro.CFrame = RootPart.CFrame
     BodyGyro.Parent = RootPart
     
-    Humanoid.PlatformStand = true
+    Humanoid.PlatformStand = false
+    Humanoid.AutoRotate = false
+    Humanoid.Sit = false
+    pcall(function()
+        Humanoid:ChangeState(Enum.HumanoidStateType.Freefall)
+    end)
     Notify("✈️ ثائر", "تفعيل الطيران الحر")
 end
 
@@ -122,7 +131,32 @@ local function StopFly()
     if BodyVelocity then BodyVelocity:Destroy(); BodyVelocity = nil end
     if BodyGyro then BodyGyro:Destroy(); BodyGyro = nil end
     Humanoid.PlatformStand = false
+    Humanoid.AutoRotate = true
     Notify("✈️ ثائر", "إيقاف الطيران")
+end
+
+local function SaveCheckpoint(index)
+    Checkpoints[index] = RootPart.CFrame
+    if index == 1 then Checkpoint1 = Checkpoints[index] end
+    if index == 2 then Checkpoint2 = Checkpoints[index] end
+    if index == 3 then Checkpoint3 = Checkpoints[index] end
+    Notify("Checkpoint", "Saved checkpoint " .. tostring(index))
+end
+
+local function GetCheckpoint(index)
+    if Checkpoints[index] then return Checkpoints[index] end
+    if index == 1 then return Checkpoint1 end
+    if index == 2 then return Checkpoint2 end
+    if index == 3 then return Checkpoint3 end
+    return nil
+end
+
+local function TeleportCheckpoint(index)
+    local checkpoint = GetCheckpoint(index)
+    if checkpoint then
+        RootPart.CFrame = checkpoint + Vector3.new(0, 3, 0)
+        Notify("Checkpoint", "Teleported to checkpoint " .. tostring(index))
+    end
 end
 
 -- ربط المدخلات
@@ -143,29 +177,23 @@ UserInputService.InputBegan:Connect(function(Input, GP)
     end
     
     if Input.KeyCode == Enum.KeyCode.N then
-        Checkpoint1 = RootPart.CFrame
-        Notify("💾 ثائر", "تم حفظ المنطقة 1")
+        SaveCheckpoint(1)
     end
     if Input.KeyCode == Enum.KeyCode.M then
-        Checkpoint2 = RootPart.CFrame
-        Notify("💾 ثائر", "تم حفظ المنطقة 2")
+        SaveCheckpoint(2)
     end
     if Input.KeyCode == Enum.KeyCode.K then
-        Checkpoint3 = RootPart.CFrame
-        Notify("💾 ثائر", "تم حفظ المنطقة 3")
+        SaveCheckpoint(3)
     end
     
-    if Input.KeyCode == Enum.KeyCode.B and Checkpoint1 then
-        RootPart.CFrame = Checkpoint1 + Vector3.new(0, 3, 0)
-        Notify("🌀 ثائر", "تيليپورت للمنطقة 1")
+    if Input.KeyCode == Enum.KeyCode.B then
+        TeleportCheckpoint(1)
     end
-    if Input.KeyCode == Enum.KeyCode.V and Checkpoint2 then
-        RootPart.CFrame = Checkpoint2 + Vector3.new(0, 3, 0)
-        Notify("🌀 ثائر", "تيليپورت للمنطقة 2")
+    if Input.KeyCode == Enum.KeyCode.V then
+        TeleportCheckpoint(2)
     end
-    if Input.KeyCode == Enum.KeyCode.J and Checkpoint3 then
-        RootPart.CFrame = Checkpoint3 + Vector3.new(0, 3, 0)
-        Notify("🌀 ثائر", "تيليپورت للمنطقة 3")
+    if Input.KeyCode == Enum.KeyCode.J then
+        TeleportCheckpoint(3)
     end
     
     if Input.KeyCode == Enum.KeyCode.C then
@@ -270,6 +298,22 @@ local function SetJumpPower(power)
     end)
 end
 
+LocalPlayer.CharacterAdded:Connect(function(newCharacter)
+    Character = newCharacter
+    Humanoid = Character:WaitForChild("Humanoid")
+    RootPart = Character:WaitForChild("HumanoidRootPart")
+    Camera = workspace.CurrentCamera or Camera
+    SetWalkSpeed(WalkSpeedValue)
+    SetJumpPower(JumpPowerValue)
+
+    if Flying then
+        if BodyVelocity then BodyVelocity:Destroy(); BodyVelocity = nil end
+        if BodyGyro then BodyGyro:Destroy(); BodyGyro = nil end
+        Flying = false
+        StartFly()
+    end
+end)
+
 -- ========== [ إنشاء الواجهة الأفقية ] ==========
 
 -- ===== 1. القاعدة الرئيسية =====
@@ -279,6 +323,7 @@ ScreenGui.Parent = CoreGui
 ScreenGui.ResetOnSpawn = false
 
 -- ===== 2. أيقونة التصغير (تظهر عند إخفاء الواجهة) =====
+local MainFrame = nil
 local MiniIcon = Instance.new("TextButton")
 MiniIcon.Size = UDim2.new(0, 50, 0, 50)
 MiniIcon.Position = UDim2.new(1, -60, 1, -60)
@@ -288,6 +333,7 @@ MiniIcon.Text = "🔥"
 MiniIcon.TextColor3 = Color3.fromRGB(255, 255, 255)
 MiniIcon.TextSize = 24
 MiniIcon.Font = Enum.Font.GothamBold
+MiniIcon.Active = true
 MiniIcon.Visible = false
 MiniIcon.ZIndex = 20
 MiniIcon.Parent = ScreenGui
@@ -296,14 +342,14 @@ local MiniCorner = Instance.new("UICorner")
 MiniCorner.CornerRadius = UDim.new(1, 0)
 MiniCorner.Parent = MiniIcon
 
-MiniIcon.MouseButton1Click:Connect(function()
-    MainFrame.Visible = true
-    MiniIcon.Visible = false
-    UIHidden = false
-end)
+local MiniStroke = Instance.new("UIStroke")
+MiniStroke.Color = Color3.fromRGB(255, 255, 255)
+MiniStroke.Thickness = 1
+MiniStroke.Transparency = 0.45
+MiniStroke.Parent = MiniIcon
 
 -- ===== 3. الإطار الرئيسي =====
-local MainFrame = Instance.new("Frame")
+MainFrame = Instance.new("Frame")
 MainFrame.Size = UDim2.new(0, 480, 0, 260)
 MainFrame.Position = UDim2.new(0.5, -240, 0.5, -130)
 MainFrame.BackgroundColor3 = Color3.fromRGB(8, 6, 18)
@@ -356,33 +402,125 @@ HideBtn.Text = "🗕"
 HideBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 HideBtn.TextSize = 14
 HideBtn.Font = Enum.Font.GothamBold
+HideBtn.Active = true
 HideBtn.Parent = TitleBar
 
 local HideCorner = Instance.new("UICorner")
 HideCorner.CornerRadius = UDim.new(1, 0)
 HideCorner.Parent = HideBtn
 
+local HideStroke = Instance.new("UIStroke")
+HideStroke.Color = Color3.fromRGB(255, 255, 255)
+HideStroke.Thickness = 1
+HideStroke.Transparency = 0.55
+HideStroke.Parent = HideBtn
+
 HideBtn.ZIndex = 10
-HideBtn.MouseButton1Click:Connect(function()
-    MainFrame.Visible = false
-    MiniIcon.Visible = true
+
+local panelTween = nil
+local function ShowPanel()
+    if panelTween then panelTween:Cancel() end
+    MainFrame.Visible = true
+    MiniIcon.Visible = false
+    UIHidden = false
+    MainFrame.BackgroundTransparency = 1
+    panelTween = TweenService:Create(MainFrame, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        BackgroundTransparency = 0.15
+    })
+    panelTween:Play()
+end
+
+local function HidePanel()
+    if panelTween then panelTween:Cancel() end
     UIHidden = true
-    Notify("ثائر", "الواجهة مصغرة | اضغط على الأيقونة الحمراء للإظهار")
+    panelTween = TweenService:Create(MainFrame, TweenInfo.new(0.16, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+        BackgroundTransparency = 1
+    })
+    panelTween:Play()
+    panelTween.Completed:Connect(function()
+        if UIHidden then
+            MainFrame.Visible = false
+            MainFrame.BackgroundTransparency = 0.15
+            MiniIcon.Visible = true
+        end
+    end)
+    Notify("ثائر", "الواجهة مصغرة | اسحب الأيقونة أو اضغط عليها للإظهار")
+end
+
+local miniDragging = false
+local miniMoved = false
+local miniDragOffset = Vector2.new()
+local miniDragStart = Vector2.new()
+
+MiniIcon.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        miniDragging = true
+        miniMoved = false
+        miniDragStart = Vector2.new(input.Position.X, input.Position.Y)
+        miniDragOffset = Vector2.new(input.Position.X - MiniIcon.AbsolutePosition.X, input.Position.Y - MiniIcon.AbsolutePosition.Y)
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if miniDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        Camera = workspace.CurrentCamera or Camera
+        local viewport = Camera.ViewportSize
+        local iconSize = MiniIcon.AbsoluteSize
+        local x = math.clamp(input.Position.X - miniDragOffset.X, 0, viewport.X - iconSize.X)
+        local y = math.clamp(input.Position.Y - miniDragOffset.Y, 0, viewport.Y - iconSize.Y)
+        MiniIcon.Position = UDim2.fromOffset(x, y)
+        miniMoved = (Vector2.new(input.Position.X, input.Position.Y) - miniDragStart).Magnitude > 6
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        miniDragging = false
+    end
+end)
+
+MiniIcon.MouseButton1Click:Connect(function()
+    if not miniMoved then
+        ShowPanel()
+    end
+end)
+
+HideBtn.MouseButton1Click:Connect(HidePanel)
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == Enum.KeyCode.F5 then
+        if UIHidden then
+            ShowPanel()
+        else
+            HidePanel()
+        end
+    end
 end)
 
 -- ===== 5. القائمة الجانبية =====
-local SideBar = Instance.new("Frame")
+local SideBar = Instance.new("ScrollingFrame")
 SideBar.Size = UDim2.new(0, 110, 1, -36)
 SideBar.Position = UDim2.new(0, 0, 0, 36)
 SideBar.BackgroundColor3 = Color3.fromRGB(0, 20, 60)
 SideBar.BackgroundTransparency = 0.1
 SideBar.BorderSizePixel = 0
+SideBar.Active = true
+SideBar.CanvasSize = UDim2.new(0, 0, 0, 0)
+SideBar.AutomaticCanvasSize = Enum.AutomaticSize.Y
+SideBar.ScrollingDirection = Enum.ScrollingDirection.Y
+SideBar.ScrollBarThickness = 3
+SideBar.ScrollBarImageColor3 = Color3.fromRGB(50, 150, 255)
 SideBar.Parent = MainFrame
 
 local SideBarLayout = Instance.new("UIListLayout")
 SideBarLayout.Padding = UDim.new(0, 6)
 SideBarLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 SideBarLayout.Parent = SideBar
+
+SideBarLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    SideBar.CanvasSize = UDim2.new(0, 0, 0, SideBarLayout.AbsoluteContentSize.Y + 12)
+end)
 
 -- ===== 6. الحاوية الرئيسية =====
 local Container = Instance.new("Frame")
@@ -401,18 +539,21 @@ local function CreatePage()
     page.BackgroundTransparency = 1
     page.BorderSizePixel = 0
     page.Visible = false
+    page.Active = true
     page.CanvasSize = UDim2.new(0, 0, 0, 0)
-    page.ScrollBarThickness = 4
+    page.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    page.ScrollingDirection = Enum.ScrollingDirection.Y
+    page.ScrollBarThickness = 6
     page.ScrollBarImageColor3 = Color3.fromRGB(50, 150, 255)
     page.Parent = Container
     
     local layout = Instance.new("UIListLayout")
-    layout.Padding = UDim.new(0, 8)
+    layout.Padding = UDim.new(0, 12)
     layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
     layout.Parent = page
     
     local function UpdateCanvas()
-        page.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 10)
+        page.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 16)
     end
     layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(UpdateCanvas)
     UpdateCanvas()
@@ -429,11 +570,18 @@ local function CreateTab(name, targetPage)
     btn.TextColor3 = Color3.fromRGB(100, 180, 255)
     btn.TextSize = 11
     btn.Font = Enum.Font.GothamBold
+    btn.Active = true
     btn.Parent = SideBar
     
     local btnCorner = Instance.new("UICorner")
     btnCorner.CornerRadius = UDim.new(0, 8)
     btnCorner.Parent = btn
+
+    local btnStroke = Instance.new("UIStroke")
+    btnStroke.Color = Color3.fromRGB(80, 160, 255)
+    btnStroke.Thickness = 1
+    btnStroke.Transparency = 0.65
+    btnStroke.Parent = btn
     
     btn.MouseButton1Click:Connect(function()
         for _, child in pairs(Container:GetChildren()) do
@@ -467,6 +615,7 @@ local function CreateButton(page, text, icon, callback)
     btn.TextColor3 = Color3.fromRGB(200, 200, 220)
     btn.TextSize = 12
     btn.Font = Enum.Font.GothamSemibold
+    btn.Active = true
     btn.Parent = page
     
     local btnCorner = Instance.new("UICorner")
@@ -492,6 +641,7 @@ local function CreateToggle(page, text, icon, callback)
     btn.TextColor3 = Color3.fromRGB(200, 200, 220)
     btn.TextSize = 12
     btn.Font = Enum.Font.GothamSemibold
+    btn.Active = true
     btn.Parent = page
     
     local btnCorner = Instance.new("UICorner")
@@ -528,11 +678,18 @@ local function CreateSlider(page, text, icon, min, max, default, callback)
     container.Size = UDim2.new(0.95, 0, 0, 55)
     container.BackgroundColor3 = Color3.fromRGB(15, 20, 50)
     container.BackgroundTransparency = 0.3
+    container.Active = true
     container.Parent = page
     
     local containerCorner = Instance.new("UICorner")
     containerCorner.CornerRadius = UDim.new(0, 10)
     containerCorner.Parent = container
+
+    local containerStroke = Instance.new("UIStroke")
+    containerStroke.Color = Color3.fromRGB(50, 120, 200)
+    containerStroke.Thickness = 1
+    containerStroke.Transparency = 0.75
+    containerStroke.Parent = container
     
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(0.6, 0, 0.4, 0)
@@ -559,6 +716,7 @@ local function CreateSlider(page, text, icon, min, max, default, callback)
     slider.Size = UDim2.new(0.9, 0, 0.3, 0)
     slider.Position = UDim2.new(0.05, 0, 0.55, 0)
     slider.BackgroundColor3 = Color3.fromRGB(30, 40, 80)
+    slider.Active = true
     slider.Parent = container
     
     local sliderCorner = Instance.new("UICorner")
@@ -579,6 +737,8 @@ local function CreateSlider(page, text, icon, min, max, default, callback)
     thumb.Position = UDim2.new((default - min) / (max - min) - 0.05, 0, -0.15, 0)
     thumb.BackgroundColor3 = Color3.fromRGB(100, 180, 255)
     thumb.Text = ""
+    thumb.Active = true
+    thumb.AutoButtonColor = false
     thumb.Parent = slider
     
     local thumbCorner = Instance.new("UICorner")
@@ -586,24 +746,45 @@ local function CreateSlider(page, text, icon, min, max, default, callback)
     thumbCorner.Parent = thumb
     
     local dragging = false
-    thumb.MouseButton1Down:Connect(function() dragging = true end)
+    local activeInput = nil
+
+    local function SetSliderFromX(x)
+        local sliderWidth = slider.AbsoluteSize.X
+        if sliderWidth <= 0 then return end
+
+        local percent = math.clamp((x - slider.AbsolutePosition.X) / sliderWidth, 0, 1)
+        local value = math.floor(min + (max - min) * percent + 0.5)
+
+        fill.Size = UDim2.new(percent, 0, 1, 0)
+        thumb.Position = UDim2.new(math.clamp(percent - 0.05, -0.05, 0.95), 0, -0.15, 0)
+        valueLabel.Text = tostring(value)
+        label.Text = icon .. " " .. text .. ": " .. tostring(value)
+        callback(value)
+    end
+
+    local function BeginSliderDrag(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            activeInput = input
+            page.ScrollingEnabled = false
+            SetSliderFromX(input.Position.X)
+        end
+    end
+
+    slider.InputBegan:Connect(BeginSliderDrag)
+    thumb.InputBegan:Connect(BeginSliderDrag)
+
     UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
+        if input == activeInput or input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+            activeInput = nil
+            page.ScrollingEnabled = true
+        end
     end)
     
     UserInputService.InputChanged:Connect(function(input)
-        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-            local mousePos = input.Position.X
-            local sliderPos = slider.AbsolutePosition.X
-            local sliderWidth = slider.AbsoluteSize.X
-            local percent = math.clamp((mousePos - sliderPos) / sliderWidth, 0, 1)
-            local value = math.floor(min + (max - min) * percent)
-            
-            fill.Size = UDim2.new(percent, 0, 1, 0)
-            thumb.Position = UDim2.new(percent - 0.05, 0, -0.15, 0)
-            valueLabel.Text = tostring(value)
-            label.Text = icon .. " " .. text .. ": " .. tostring(value)
-            callback(value)
+        if dragging and (input == activeInput or input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            SetSliderFromX(input.Position.X)
         end
     end)
     
@@ -677,36 +858,24 @@ local CheckpointPage = CreatePage()
 CreateTab("💾 مناطق", CheckpointPage)
 
 CreateButton(CheckpointPage, "حفظ المنطقة 1", "📍", function()
-    Checkpoint1 = RootPart.CFrame
-    Notify("💾 ثائر", "تم حفظ المنطقة 1")
+    SaveCheckpoint(1)
 end)
 CreateButton(CheckpointPage, "تيليپورت 1", "🌀", function()
-    if Checkpoint1 then
-        RootPart.CFrame = Checkpoint1 + Vector3.new(0, 3, 0)
-        Notify("🌀 ثائر", "تيليپورت للمنطقة 1")
-    end
+    TeleportCheckpoint(1)
 end)
 
 CreateButton(CheckpointPage, "حفظ المنطقة 2", "📍", function()
-    Checkpoint2 = RootPart.CFrame
-    Notify("💾 ثائر", "تم حفظ المنطقة 2")
+    SaveCheckpoint(2)
 end)
 CreateButton(CheckpointPage, "تيليپورت 2", "🌀", function()
-    if Checkpoint2 then
-        RootPart.CFrame = Checkpoint2 + Vector3.new(0, 3, 0)
-        Notify("🌀 ثائر", "تيليپورت للمنطقة 2")
-    end
+    TeleportCheckpoint(2)
 end)
 
 CreateButton(CheckpointPage, "حفظ المنطقة 3", "📍", function()
-    Checkpoint3 = RootPart.CFrame
-    Notify("💾 ثائر", "تم حفظ المنطقة 3")
+    SaveCheckpoint(3)
 end)
 CreateButton(CheckpointPage, "تيليپورت 3", "🌀", function()
-    if Checkpoint3 then
-        RootPart.CFrame = Checkpoint3 + Vector3.new(0, 3, 0)
-        Notify("🌀 ثائر", "تيليپورت للمنطقة 3")
-    end
+    TeleportCheckpoint(3)
 end)
 
 -- صفحة الموسيقى
