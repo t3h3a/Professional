@@ -1,11 +1,11 @@
 --[[
     ╔══════════════════════════════════════════════════════════════════════════════╗
     ║                                                                              ║
-    ║                       ثائر X100 - النسخة الأفقية                             ║
+    ║                    ثائر X100 - النسخة الاحترافية النهائية                    ║
     ║                                                                              ║
-    ║   ✈️ طيران بالكاميرا  |  🧱 اختراق جدران  |  💾 حفظ منطقتين                  ║
-    ║   🎵 موسيقى عالمية    |  👥 تعقب لاعبين   |  ⚡ سرعة متغيرة                  ║
-    ║   🛡️ حماية كاملة     |  📱 واجهة أفقية   |  🎮 قائمة جانبية                 ║
+    ║   ✈️ طيران بالكاميرا  |  🧱 اختراق جدران  |  💾 حفظ 3 مناطق                  ║
+    ║   🎵 موسيقى عالمية    |  👥 تعقب لاعبين   |  ⚡ سرعة + قفز متغيرة            ║
+    ║   🛡️ حماية كاملة     |  📱 واجهة أفقية   |  🎮 أيقونة تصغير                 ║
     ║                                                                              ║
     ║                         جميع الحقوق محفوظة © ثائر 2024                       ║
     ║                                                                              ║
@@ -31,19 +31,22 @@ local Flying = false
 local NoClip = false
 local FlySpeed = 100
 local BodyVelocity = nil
+local BodyGyro = nil
 local Checkpoint1 = nil
 local Checkpoint2 = nil
+local Checkpoint3 = nil
 local CurrentTarget = nil
 local WalkSpeedValue = 16
+local JumpPowerValue = 50
 local UIHidden = false
 
 -- ========== [ نظام الإشعارات ] ==========
-local function Notify(title, text)
+local function Notify(title, text, duration)
     pcall(function()
         StarterGui:SetCore("SendNotification", {
             Title = title,
             Text = text,
-            Duration = 2
+            Duration = duration or 2
         })
     end)
 end
@@ -67,9 +70,62 @@ local function AntiBan()
 end
 AntiBan()
 
--- ========== [ نظام الطيران بالكاميرا ] ==========
+-- ========== [ نظام الطيران المحسن (BodyVelocity + BodyGyro) ] ==========
 local KeyStates = {W = false, A = false, S = false, D = false}
 
+local function UpdateFlight()
+    if not Flying or not BodyVelocity then return end
+    
+    local moveDir = Vector3.new()
+    if KeyStates.W then moveDir = moveDir + Vector3.new(0, 0, -1) end
+    if KeyStates.S then moveDir = moveDir + Vector3.new(0, 0, 1) end
+    if KeyStates.A then moveDir = moveDir + Vector3.new(-1, 0, 0) end
+    if KeyStates.D then moveDir = moveDir + Vector3.new(1, 0, 0) end
+    
+    if moveDir.Magnitude > 0 then
+        moveDir = moveDir.Unit
+        local moveVector = (Camera.CFrame.LookVector * moveDir.Z + Camera.CFrame.RightVector * moveDir.X)
+        BodyVelocity.Velocity = moveVector * FlySpeed
+        
+        -- تحديث اتجاه الجيروسكوب للحفاظ على التوازن
+        if BodyGyro then
+            BodyGyro.CFrame = RootPart.CFrame
+            BodyGyro.D = 15e3
+        end
+    else
+        BodyVelocity.Velocity = Vector3.new(0, 0, 0)
+    end
+end
+
+local function StartFly()
+    if Flying then return end
+    Flying = true
+    
+    BodyVelocity = Instance.new("BodyVelocity")
+    BodyVelocity.MaxForce = Vector3.new(100000, 100000, 100000)
+    BodyVelocity.Velocity = Vector3.new(0, 0, 0)
+    BodyVelocity.Parent = RootPart
+    
+    BodyGyro = Instance.new("BodyGyro")
+    BodyGyro.MaxTorque = Vector3.new(100000, 100000, 100000)
+    BodyGyro.P = 15e3
+    BodyGyro.CFrame = RootPart.CFrame
+    BodyGyro.Parent = RootPart
+    
+    Humanoid.PlatformStand = true
+    Notify("✈️ ثائر", "تفعيل الطيران الحر")
+end
+
+local function StopFly()
+    if not Flying then return end
+    Flying = false
+    if BodyVelocity then BodyVelocity:Destroy(); BodyVelocity = nil end
+    if BodyGyro then BodyGyro:Destroy(); BodyGyro = nil end
+    Humanoid.PlatformStand = false
+    Notify("✈️ ثائر", "إيقاف الطيران")
+end
+
+-- ربط المدخلات
 UserInputService.InputBegan:Connect(function(Input, GP)
     if GP then return end
     if Input.KeyCode == Enum.KeyCode.W then KeyStates.W = true end
@@ -78,17 +134,7 @@ UserInputService.InputBegan:Connect(function(Input, GP)
     if Input.KeyCode == Enum.KeyCode.D then KeyStates.D = true end
     
     if Input.KeyCode == Enum.KeyCode.E then
-        if Flying then
-            Flying = false
-            if BodyVelocity then BodyVelocity:Destroy() end
-            Notify("✈️ ثائر", "إيقاف الطيران")
-        else
-            Flying = true
-            BodyVelocity = Instance.new("BodyVelocity")
-            BodyVelocity.MaxForce = Vector3.new(100000, 100000, 100000)
-            BodyVelocity.Parent = RootPart
-            Notify("✈️ ثائر", "تفعيل الطيران")
-        end
+        if Flying then StopFly() else StartFly() end
     end
     
     if Input.KeyCode == Enum.KeyCode.X then
@@ -100,36 +146,35 @@ UserInputService.InputBegan:Connect(function(Input, GP)
         Checkpoint1 = RootPart.CFrame
         Notify("💾 ثائر", "تم حفظ المنطقة 1")
     end
-    
     if Input.KeyCode == Enum.KeyCode.M then
         Checkpoint2 = RootPart.CFrame
         Notify("💾 ثائر", "تم حفظ المنطقة 2")
+    end
+    if Input.KeyCode == Enum.KeyCode.K then
+        Checkpoint3 = RootPart.CFrame
+        Notify("💾 ثائر", "تم حفظ المنطقة 3")
     end
     
     if Input.KeyCode == Enum.KeyCode.B and Checkpoint1 then
         RootPart.CFrame = Checkpoint1 + Vector3.new(0, 3, 0)
         Notify("🌀 ثائر", "تيليپورت للمنطقة 1")
     end
-    
     if Input.KeyCode == Enum.KeyCode.V and Checkpoint2 then
         RootPart.CFrame = Checkpoint2 + Vector3.new(0, 3, 0)
         Notify("🌀 ثائر", "تيليپورت للمنطقة 2")
+    end
+    if Input.KeyCode == Enum.KeyCode.J and Checkpoint3 then
+        RootPart.CFrame = Checkpoint3 + Vector3.new(0, 3, 0)
+        Notify("🌀 ثائر", "تيليپورت للمنطقة 3")
     end
     
     if Input.KeyCode == Enum.KeyCode.C then
         FlySpeed = math.min(300, FlySpeed + 25)
         Notify("⚡ السرعة", "سرعة الطيران: " .. FlySpeed)
     end
-    
     if Input.KeyCode == Enum.KeyCode.Z then
         FlySpeed = math.max(30, FlySpeed - 25)
         Notify("⚡ السرعة", "سرعة الطيران: " .. FlySpeed)
-    end
-    
-    if Input.KeyCode == Enum.KeyCode.F5 then
-        UIHidden = not UIHidden
-        MainFrame.Visible = not UIHidden
-        Notify("ثائر", UIHidden and "الواجهة مخفية" or "الواجهة ظاهرة")
     end
 end)
 
@@ -140,23 +185,8 @@ UserInputService.InputEnded:Connect(function(Input)
     if Input.KeyCode == Enum.KeyCode.D then KeyStates.D = false end
 end)
 
-RunService.RenderStepped:Connect(function()
-    if Flying and BodyVelocity then
-        local moveDir = Vector3.new()
-        if KeyStates.W then moveDir = moveDir + Vector3.new(0, 0, -1) end
-        if KeyStates.S then moveDir = moveDir + Vector3.new(0, 0, 1) end
-        if KeyStates.A then moveDir = moveDir + Vector3.new(-1, 0, 0) end
-        if KeyStates.D then moveDir = moveDir + Vector3.new(1, 0, 0) end
-        
-        if moveDir.Magnitude > 0 then
-            moveDir = moveDir.Unit
-            local moveVector = (Camera.CFrame.LookVector * moveDir.Z + Camera.CFrame.RightVector * moveDir.X)
-            BodyVelocity.Velocity = moveVector * FlySpeed
-        else
-            BodyVelocity.Velocity = Vector3.new(0, 0, 0)
-        end
-    end
-end)
+-- تحديث الطيران في كل إطار
+RunService.RenderStepped:Connect(UpdateFlight)
 
 -- ========== [ نظام اختراق الجدران ] ==========
 RunService.Stepped:Connect(function()
@@ -224,6 +254,22 @@ local function StopGlobalSound()
     Notify("🔇 ثائر", "إيقاف الموسيقى")
 end
 
+-- ========== [ دوال السرعة والقفز ] ==========
+local function SetWalkSpeed(speed)
+    WalkSpeedValue = speed
+    pcall(function()
+        Humanoid.WalkSpeed = speed
+    end)
+end
+
+local function SetJumpPower(power)
+    JumpPowerValue = power
+    pcall(function()
+        Humanoid.JumpPower = power
+        Humanoid.UseJumpPower = true
+    end)
+end
+
 -- ========== [ إنشاء الواجهة الأفقية ] ==========
 
 -- ===== 1. القاعدة الرئيسية =====
@@ -232,6 +278,31 @@ ScreenGui.Name = "ThaerX100"
 ScreenGui.Parent = CoreGui
 ScreenGui.ResetOnSpawn = false
 
+-- ===== 2. أيقونة التصغير (تظهر عند إخفاء الواجهة) =====
+local MiniIcon = Instance.new("TextButton")
+MiniIcon.Size = UDim2.new(0, 50, 0, 50)
+MiniIcon.Position = UDim2.new(1, -60, 1, -60)
+MiniIcon.BackgroundColor3 = Color3.fromRGB(255, 50, 100)
+MiniIcon.BackgroundTransparency = 0.1
+MiniIcon.Text = "🔥"
+MiniIcon.TextColor3 = Color3.fromRGB(255, 255, 255)
+MiniIcon.TextSize = 24
+MiniIcon.Font = Enum.Font.GothamBold
+MiniIcon.Visible = false
+MiniIcon.ZIndex = 20
+MiniIcon.Parent = ScreenGui
+
+local MiniCorner = Instance.new("UICorner")
+MiniCorner.CornerRadius = UDim.new(1, 0)
+MiniCorner.Parent = MiniIcon
+
+MiniIcon.MouseButton1Click:Connect(function()
+    MainFrame.Visible = true
+    MiniIcon.Visible = false
+    UIHidden = false
+end)
+
+-- ===== 3. الإطار الرئيسي =====
 local MainFrame = Instance.new("Frame")
 MainFrame.Size = UDim2.new(0, 480, 0, 260)
 MainFrame.Position = UDim2.new(0.5, -240, 0.5, -130)
@@ -252,7 +323,7 @@ MainStroke.Thickness = 2
 MainStroke.Transparency = 0.3
 MainStroke.Parent = MainFrame
 
--- ===== 2. شريط العنوان (قابل للسحب) =====
+-- ===== 4. شريط العنوان =====
 local TitleBar = Instance.new("Frame")
 TitleBar.Size = UDim2.new(1, 0, 0.12, 0)
 TitleBar.BackgroundColor3 = Color3.fromRGB(20, 60, 150)
@@ -275,7 +346,7 @@ TitleText.TextXAlignment = Enum.TextXAlignment.Left
 TitleText.Font = Enum.Font.GothamBold
 TitleText.Parent = TitleBar
 
--- زر الإخفاء (الأحمر)
+-- زر التصغير
 local HideBtn = Instance.new("TextButton")
 HideBtn.Size = UDim2.new(0.1, 0, 0.7, 0)
 HideBtn.Position = UDim2.new(0.89, 0, 0.15, 0)
@@ -293,12 +364,13 @@ HideCorner.Parent = HideBtn
 
 HideBtn.ZIndex = 10
 HideBtn.MouseButton1Click:Connect(function()
-    UIHidden = not UIHidden
-    MainFrame.Visible = not UIHidden
-    Notify("ثائر", UIHidden and "الواجهة مخفية" or "الواجهة ظاهرة")
+    MainFrame.Visible = false
+    MiniIcon.Visible = true
+    UIHidden = true
+    Notify("ثائر", "الواجهة مصغرة | اضغط على الأيقونة الحمراء للإظهار")
 end)
 
--- ===== 3. القائمة الجانبية (Sidebar) =====
+-- ===== 5. القائمة الجانبية =====
 local SideBar = Instance.new("Frame")
 SideBar.Size = UDim2.new(0, 110, 1, -36)
 SideBar.Position = UDim2.new(0, 0, 0, 36)
@@ -312,7 +384,7 @@ SideBarLayout.Padding = UDim.new(0, 6)
 SideBarLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 SideBarLayout.Parent = SideBar
 
--- ===== 4. الحاوية الرئيسية للمحتوى (Container) =====
+-- ===== 6. الحاوية الرئيسية =====
 local Container = Instance.new("Frame")
 Container.Size = UDim2.new(1, -120, 1, -36)
 Container.Position = UDim2.new(0, 115, 0, 36)
@@ -322,7 +394,6 @@ Container.Parent = MainFrame
 
 -- ========== [ دوال إنشاء النظام ] ==========
 
--- دالة إنشاء صفحة جديدة (ScrollingFrame داخل Container)
 local function CreatePage()
     local page = Instance.new("ScrollingFrame")
     page.Size = UDim2.new(1, -10, 1, -10)
@@ -349,7 +420,6 @@ local function CreatePage()
     return page
 end
 
--- دالة إنشاء زر تبويب جانبي
 local function CreateTab(name, targetPage)
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(0.9, 0, 0, 36)
@@ -366,16 +436,13 @@ local function CreateTab(name, targetPage)
     btnCorner.Parent = btn
     
     btn.MouseButton1Click:Connect(function()
-        -- إخفاء كل الصفحات
         for _, child in pairs(Container:GetChildren()) do
             if child:IsA("ScrollingFrame") then
                 child.Visible = false
             end
         end
-        -- إظهار الصفحة المطلوبة
         targetPage.Visible = true
         
-        -- تغيير لون الزر المحدد
         for _, b in pairs(SideBar:GetChildren()) do
             if b:IsA("TextButton") then
                 b.BackgroundColor3 = Color3.fromRGB(0, 40, 120)
@@ -391,7 +458,31 @@ local function CreateTab(name, targetPage)
     return btn
 end
 
--- دالة إنشاء زر تبديل (Toggle)
+local function CreateButton(page, text, icon, callback)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0.95, 0, 0, 42)
+    btn.BackgroundColor3 = Color3.fromRGB(20, 30, 70)
+    btn.BackgroundTransparency = 0.2
+    btn.Text = icon .. " " .. text
+    btn.TextColor3 = Color3.fromRGB(200, 200, 220)
+    btn.TextSize = 12
+    btn.Font = Enum.Font.GothamSemibold
+    btn.Parent = page
+    
+    local btnCorner = Instance.new("UICorner")
+    btnCorner.CornerRadius = UDim.new(0, 10)
+    btnCorner.Parent = btn
+    
+    local btnStroke = Instance.new("UIStroke")
+    btnStroke.Color = Color3.fromRGB(50, 120, 200)
+    btnStroke.Thickness = 1
+    btnStroke.Transparency = 0.5
+    btnStroke.Parent = btn
+    
+    btn.MouseButton1Click:Connect(callback)
+    return btn
+end
+
 local function CreateToggle(page, text, icon, callback)
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(0.95, 0, 0, 42)
@@ -406,6 +497,12 @@ local function CreateToggle(page, text, icon, callback)
     local btnCorner = Instance.new("UICorner")
     btnCorner.CornerRadius = UDim.new(0, 10)
     btnCorner.Parent = btn
+    
+    local btnStroke = Instance.new("UIStroke")
+    btnStroke.Color = Color3.fromRGB(50, 120, 200)
+    btnStroke.Thickness = 1
+    btnStroke.Transparency = 0.5
+    btnStroke.Parent = btn
     
     local active = false
     btn.MouseButton1Click:Connect(function()
@@ -426,27 +523,6 @@ local function CreateToggle(page, text, icon, callback)
     return btn
 end
 
--- دالة إنشاء زر عادي
-local function CreateButton(page, text, icon, callback)
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0.95, 0, 0, 42)
-    btn.BackgroundColor3 = Color3.fromRGB(20, 30, 70)
-    btn.BackgroundTransparency = 0.2
-    btn.Text = icon .. " " .. text
-    btn.TextColor3 = Color3.fromRGB(200, 200, 220)
-    btn.TextSize = 12
-    btn.Font = Enum.Font.GothamSemibold
-    btn.Parent = page
-    
-    local btnCorner = Instance.new("UICorner")
-    btnCorner.CornerRadius = UDim.new(0, 10)
-    btnCorner.Parent = btn
-    
-    btn.MouseButton1Click:Connect(callback)
-    return btn
-end
-
--- دالة إنشاء منزلق (Slider)
 local function CreateSlider(page, text, icon, min, max, default, callback)
     local container = Instance.new("Frame")
     container.Size = UDim2.new(0.95, 0, 0, 55)
@@ -534,7 +610,6 @@ local function CreateSlider(page, text, icon, min, max, default, callback)
     return container
 end
 
--- دالة إنشاء صندوق إدخال
 local function CreateInputBox(page, placeholder, callback)
     local container = Instance.new("Frame")
     container.Size = UDim2.new(0.95, 0, 0, 45)
@@ -574,38 +649,30 @@ end
 -- ========== [ بناء الصفحات ] ==========
 
 -- صفحة الطيران
-local FlyPage = CreatePage()
-CreateTab("✈️ طيران", FlyPage)
+local FlightPage = CreatePage()
+CreateTab("✈️ طيران", FlightPage)
 
-CreateToggle(FlyPage, "الطيران الحر", "✈️", function(active)
-    if active then
-        Flying = true
-        BodyVelocity = Instance.new("BodyVelocity")
-        BodyVelocity.MaxForce = Vector3.new(100000, 100000, 100000)
-        BodyVelocity.Parent = RootPart
-        Notify("✈️ ثائر", "تفعيل الطيران")
-    else
-        Flying = false
-        if BodyVelocity then BodyVelocity:Destroy() end
-        Notify("✈️ ثائر", "إيقاف الطيران")
-    end
+CreateToggle(FlightPage, "الطيران الحر", "✈️", function(active)
+    if active then StartFly() else StopFly() end
 end)
 
-CreateSlider(FlyPage, "سرعة الطيران", "⚡", 30, 300, 100, function(value)
+CreateSlider(FlightPage, "سرعة الطيران", "⚡", 30, 300, 100, function(value)
     FlySpeed = value
 end)
 
-CreateSlider(FlyPage, "سرعة المشي", "🚶", 16, 250, 16, function(value)
-    WalkSpeedValue = value
-    pcall(function() Humanoid.WalkSpeed = value end)
+CreateSlider(FlightPage, "سرعة المشي", "🚶", 16, 250, 16, function(value)
+    SetWalkSpeed(value)
 end)
 
-CreateToggle(FlyPage, "اختراق الجدران", "🧱", function(active)
+CreateSlider(FlightPage, "قوة القفز", "🚀", 50, 500, 50, function(value)
+    SetJumpPower(value)
+end)
+
+CreateToggle(FlightPage, "اختراق الجدران", "🧱", function(active)
     NoClip = active
-    Notify("🧱 ثائر", active and "تفعيل اختراق الجدران" or "إيقاف اختراق الجدران")
 end)
 
--- صفحة المناطق
+-- صفحة المناطق (3 مناطق)
 local CheckpointPage = CreatePage()
 CreateTab("💾 مناطق", CheckpointPage)
 
@@ -613,8 +680,7 @@ CreateButton(CheckpointPage, "حفظ المنطقة 1", "📍", function()
     Checkpoint1 = RootPart.CFrame
     Notify("💾 ثائر", "تم حفظ المنطقة 1")
 end)
-
-CreateButton(CheckpointPage, "تيليپورت للمنطقة 1", "🌀", function()
+CreateButton(CheckpointPage, "تيليپورت 1", "🌀", function()
     if Checkpoint1 then
         RootPart.CFrame = Checkpoint1 + Vector3.new(0, 3, 0)
         Notify("🌀 ثائر", "تيليپورت للمنطقة 1")
@@ -625,11 +691,21 @@ CreateButton(CheckpointPage, "حفظ المنطقة 2", "📍", function()
     Checkpoint2 = RootPart.CFrame
     Notify("💾 ثائر", "تم حفظ المنطقة 2")
 end)
-
-CreateButton(CheckpointPage, "تيليپورت للمنطقة 2", "🌀", function()
+CreateButton(CheckpointPage, "تيليپورت 2", "🌀", function()
     if Checkpoint2 then
         RootPart.CFrame = Checkpoint2 + Vector3.new(0, 3, 0)
         Notify("🌀 ثائر", "تيليپورت للمنطقة 2")
+    end
+end)
+
+CreateButton(CheckpointPage, "حفظ المنطقة 3", "📍", function()
+    Checkpoint3 = RootPart.CFrame
+    Notify("💾 ثائر", "تم حفظ المنطقة 3")
+end)
+CreateButton(CheckpointPage, "تيليپورت 3", "🌀", function()
+    if Checkpoint3 then
+        RootPart.CFrame = Checkpoint3 + Vector3.new(0, 3, 0)
+        Notify("🌀 ثائر", "تيليپورت للمنطقة 3")
     end
 end)
 
@@ -674,7 +750,7 @@ CreateInputBox(PlayersPage, "أدخل اسم اللاعب", function(text)
     end
 end)
 
-CreateButton(PlayersPage, "تيليپورت إلى اللاعب", "🎯", function()
+CreateButton(PlayersPage, "تيليپورت للاعب", "🎯", function()
     if CurrentTarget then
         TeleportToPlayer(CurrentTarget)
     else
@@ -695,10 +771,10 @@ local InfoPage = CreatePage()
 CreateTab("ℹ️ معلومات", InfoPage)
 
 local InfoText = Instance.new("TextLabel")
-InfoText.Size = UDim2.new(0.95, 0, 0, 120)
+InfoText.Size = UDim2.new(0.95, 0, 0, 140)
 InfoText.BackgroundColor3 = Color3.fromRGB(15, 20, 50)
 InfoText.BackgroundTransparency = 0.3
-InfoText.Text = "🔥 ثائر X100\n\nالنسخة: Ultimate Edition\nالمطور: Shadow Team\n\nاختصارات:\nE ← طيران\nX ← جدران\nN,M ← حفظ\nB,V ← تيليپورت\nC,Z ← سرعة\nF5 ← إخفاء الواجهة"
+InfoText.Text = "🔥 ثائر X100\n\nالنسخة: Ultimate Edition\nالمطور: Shadow Team\n\nاختصارات:\nE ← طيران\nX ← جدران\nN,M,K ← حفظ\nB,V,J ← تيليپورت\nC,Z ← سرعة الطيران\nF5 ← إخفاء الواجهة"
 InfoText.TextColor3 = Color3.fromRGB(200, 200, 220)
 InfoText.TextSize = 11
 InfoText.Font = Enum.Font.GothamMedium
@@ -714,28 +790,24 @@ for _, child in pairs(Container:GetChildren()) do
         child.Visible = false
     end
 end
-FlyPage.Visible = true
-
--- ========== [ تحديث ارتفاع القائمة الجانبية ] ==========
-local function UpdateSideBarHeight()
-    -- يتم التحديث تلقائياً بواسطة UIListLayout
-end
-UpdateSideBarHeight()
+FlightPage.Visible = true
 
 -- ========== [ رسالة البداية ] ==========
-Notify("🔥 ثائر X100", "تم التحميل | جميع الميزات جاهزة")
+Notify("🔥 ثائر X100", "تم التحميل | جميع الميزات جاهزة", 5)
 
 print([[
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                                                                              ║
-║                    ثائر X100 - النسخة الأفقية - تم التحميل                   ║
+║                    ثائر X100 - النسخة الاحترافية النهائية                    ║
 ║                                                                              ║
 ║   🎮 E  ← طيران                                            ║
 ║   🎮 X  ← اختراق جدران                                     ║
 ║   🎮 N  ← حفظ المنطقة 1                                    ║
 ║   🎮 M  ← حفظ المنطقة 2                                    ║
-║   🎮 B  ← تيليپورت للمنطقة 1                               ║
-║   🎮 V  ← تيليپورت للمنطقة 2                               ║
+║   🎮 K  ← حفظ المنطقة 3                                    ║
+║   🎮 B  ← تيليپورت 1                                       ║
+║   🎮 V  ← تيليپورت 2                                       ║
+║   🎮 J  ← تيليپورت 3                                       ║
 ║   🎮 C  ← +25 سرعة الطيران                                 ║
 ║   🎮 Z  ← -25 سرعة الطيران                                 ║
 ║   🎮 F5 ← إظهار/إخفاء الواجهة                              ║
