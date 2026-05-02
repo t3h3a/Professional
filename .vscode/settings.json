@@ -1,0 +1,16 @@
+{
+  "Lua.runtime.version": "Lua 5.1",
+  "Lua.workspace.checkThirdParty": false,
+  "Lua.workspace.library": [
+    "${workspaceFolder}/.lua-types"
+  ],
+  "Lua.diagnostics.globals": [
+    "game",
+    "workspace",
+    "script",
+    "loadstring",
+    "Rayfield"
+  ],
+  "Lua.completion.callSnippet": "Replace",
+  "Lua.telemetry.enable": false
+}
