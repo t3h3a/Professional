@@ -255,7 +255,7 @@ ScreenGui.ResetOnSpawn = false
 
 -- الإطار الرئيسي (قابل للسحب ومتجاوب)
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 320, 0, 480)
+MainFrame.Size = UDim2.new(0, 280, 0, 400)
 MainFrame.Position = UDim2.new(0.5, -160, 0.5, -240)
 MainFrame.BackgroundColor3 = Color3.fromRGB(10, 5, 20)
 MainFrame.BackgroundTransparency = 0.05
@@ -322,12 +322,12 @@ ScrollFrame.Size = UDim2.new(1, 0, 0.87, 0)
 ScrollFrame.Position = UDim2.new(0, 0, 0.1, 0)
 ScrollFrame.BackgroundTransparency = 1
 ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
-ScrollFrame.ScrollBarThickness = 4
+ScrollFrame.ScrollBarThickness = 6
 ScrollFrame.ScrollBarImageColor3 = Color3.fromRGB(255, 50, 100)
 ScrollFrame.Parent = MainFrame
 
 local CanvasLayout = Instance.new("UIListLayout")
-CanvasLayout.Padding = UDim.new(0, 8)
+CanvasLayout.Padding = UDim.new(0, 12)
 CanvasLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 CanvasLayout.Parent = ScrollFrame
 
@@ -367,12 +367,12 @@ end
 -- ========== [ دالة إنشاء زر تبديل ] ==========
 local function CreateToggle(text, icon, callback)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0.95, 0, 0.09, 0)
+    btn.Size = UDim2.new(0.95, 0, 0.12, 0)
     btn.BackgroundColor3 = Color3.fromRGB(20, 10, 35)
     btn.BackgroundTransparency = 0.3
     btn.Text = icon .. " " .. text .. " 🔘 OFF"
     btn.TextColor3 = Color3.fromRGB(200, 200, 200)
-    btn.TextSize = 13
+    btn.TextSize = 14
     btn.Font = Enum.Font.GothamSemibold
     btn.Parent = ScrollFrame
     
@@ -405,12 +405,12 @@ end
 -- ========== [ دالة إنشاء زر عادي ] ==========
 local function CreateButton(text, icon, callback, color)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0.95, 0, 0.09, 0)
+    btn.Size = UDim2.new(0.95, 0, 0.12, 0)
     btn.BackgroundColor3 = color or Color3.fromRGB(255, 30, 90)
     btn.BackgroundTransparency = 0.15
     btn.Text = icon .. " " .. text
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.TextSize = 13
+    btn.TextSize = 14
     btn.Font = Enum.Font.GothamSemibold
     btn.Parent = ScrollFrame
     
