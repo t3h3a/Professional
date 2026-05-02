@@ -1,104 +1,102 @@
 --[[
     ╔══════════════════════════════════════════════════════════════╗
-    ║             ثائر X100 PRO - النسخة الفخمة والمطورة             ║
+    ║             ثائر X100 PRO - النسخة الإصلاحية الفخمة            ║
     ╚══════════════════════════════════════════════════════════════╝
 ]]
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
+local StarterGui = game:GetService("StarterGui")
+
 local LocalPlayer = Players.LocalPlayer
 local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
 local RootPart = Character:WaitForChild("HumanoidRootPart")
 local Camera = workspace.CurrentCamera
 
 -- إعدادات
-local Flying = false
-local NoClip = false
+local Flying, NoClip = false, false
 local FlySpeed = 100
 local BodyVelocity, BodyGyro
-local MusicIDs = {"rbxassetid://1837879075", "rbxassetid://6015093561", "rbxassetid://9048375443"}
+local MusicIDs = {"rbxassetid://1837879075", "rbxassetid://6015093561"}
 local CurrentMusic, MusicIndex = nil, 1
 
--- ========== [ إنشاء الواجهة الفخمة ] ==========
+-- ========== [ الواجهة الرئيسية ] ==========
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "ThaerProUI"
+ScreenGui.Name = "ThaerFixedUI"
 ScreenGui.Parent = game:GetService("CoreGui")
+ScreenGui.ResetOnSpawn = false
 
--- شعار التصغير (الشعار الصغير)
-local MinIcon = Instance.new("TextButton")
-MinIcon.Size = UDim2.new(0, 50, 0, 50)
-MinIcon.Position = UDim2.new(0.05, 0, 0.4, 0)
-MinIcon.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-MinIcon.Text = "🔥"
-MinIcon.TextSize = 25
-MinIcon.Visible = false
-MinIcon.Parent = ScreenGui
-local IconCorner = Instance.new("UICorner")
-IconCorner.CornerRadius = UDim.new(1, 0)
-IconCorner.Parent = MinIcon
-
--- اللوحة الرئيسية
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 350, 0, 220)
-MainFrame.Position = UDim2.new(0.5, -175, 0.4, -110)
-MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+MainFrame.Size = UDim2.new(0, 320, 0, 220)
+MainFrame.Position = UDim2.new(0.5, -160, 0.4, -110)
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 MainFrame.BorderSizePixel = 0
-MainFrame.ClipsDescendants = true
 MainFrame.Active = true
 MainFrame.Draggable = true
 MainFrame.Parent = ScreenGui
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
 
-local MainCorner = Instance.new("UICorner")
-MainCorner.Parent = MainFrame
+-- شعار التصغير
+local MinIcon = Instance.new("TextButton")
+MinIcon.Size = UDim2.new(0, 55, 0, 55)
+MinIcon.Position = UDim2.new(0.05, 0, 0.1, 0)
+MinIcon.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+MinIcon.Text = "🔥"
+MinIcon.TextSize = 30
+MinIcon.Visible = false
+MinIcon.Parent = ScreenGui
+Instance.new("UICorner", MinIcon).CornerRadius = UDim.new(1, 0)
 
--- القائمة الجانبية (Tabs)
+-- القائمة الجانبية
 local SideBar = Instance.new("Frame")
-SideBar.Size = UDim2.new(0, 80, 1, 0)
-SideBar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+SideBar.Size = UDim2.new(0, 90, 1, 0)
+SideBar.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+SideBar.BorderSizePixel = 0
 SideBar.Parent = MainFrame
+Instance.new("UICorner", SideBar).CornerRadius = UDim.new(0, 12)
 
-local Pages = Instance.new("Frame")
-Pages.Size = UDim2.new(1, -90, 1, -40)
-Pages.Position = UDim2.new(0, 85, 0, 35)
-Pages.BackgroundTransparency = 1
-Pages.Parent = MainFrame
+-- حاوية الصفحات
+local PagesContainer = Instance.new("Frame")
+PagesContainer.Size = UDim2.new(1, -100, 1, -10)
+PagesContainer.Position = UDim2.new(0, 95, 0, 5)
+PagesContainer.BackgroundTransparency = 1
+PagesContainer.Parent = MainFrame
 
--- نظام الصفحات
-local function CreatePage(name)
-    local page = Instance.new("ScrollingFrame")
-    page.Size = UDim2.new(1, 0, 1, 0)
-    page.BackgroundTransparency = 1
-    page.Visible = false
-    page.ScrollBarThickness = 0
-    page.Parent = Pages
-    return page
+local function CreatePage()
+    local f = Instance.new("ScrollingFrame")
+    f.Size = UDim2.new(1, 0, 1, 0)
+    f.BackgroundTransparency = 1
+    f.ScrollBarThickness = 0
+    f.Visible = false
+    f.Parent = PagesContainer
+    local layout = Instance.new("UIListLayout", f)
+    layout.Padding = UDim.new(0, 8)
+    layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    return f
 end
 
-local MainTab = CreatePage("Main")
-local MusicTab = CreatePage("Music")
+local MainTab = CreatePage()
+local MusicTab = CreatePage()
 MainTab.Visible = true
 
--- ========== [ أزرار التحكم ] ==========
-
-local function CreateToggle(parent, text, pos, callback)
+-- ========== [ وظيفة إنشاء الأزرار ] ==========
+local function NewButton(parent, text, color, func)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0.9, 0, 0, 35)
-    btn.Position = UDim2.new(0.05, 0, 0, pos)
-    btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    btn.Size = UDim2.new(0.95, 0, 0, 40)
+    btn.BackgroundColor3 = color
     btn.Text = text
     btn.TextColor3 = Color3.white
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 14
     btn.Parent = parent
-    Instance.new("UICorner").Parent = btn
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
     
-    btn.MouseButton1Click:Connect(function()
-        local state = callback()
-        btn.BackgroundColor3 = state and Color3.fromRGB(255, 0, 0) or Color3.fromRGB(30, 30, 30)
-    end)
+    btn.MouseButton1Click:Connect(func)
+    return btn
 end
 
--- صفحة الرئيسية
-CreateToggle(MainTab, "✈️ تشغيل الطيران", 0, function()
+-- زر الطيران
+local flyBtn = NewButton(MainTab, "✈️ طيران: إيقاف", Color3.fromRGB(40, 40, 40), function()
     Flying = not Flying
     if Flying then
         BodyVelocity = Instance.new("BodyVelocity", RootPart)
@@ -109,62 +107,57 @@ CreateToggle(MainTab, "✈️ تشغيل الطيران", 0, function()
         if BodyVelocity then BodyVelocity:Destroy() end
         if BodyGyro then BodyGyro:Destroy() end
     end
-    return Flying
 end)
 
-CreateToggle(MainTab, "🧱 اختراق الجدران", 45, function()
+-- زر الجدران
+local noclipBtn = NewButton(MainTab, "🧱 جدران: إيقاف", Color3.fromRGB(40, 40, 40), function()
     NoClip = not NoClip
-    return NoClip
 end)
 
 -- صفحة الموسيقى والسرعة
-CreateToggle(MusicTab, "🎵 تشغيل/إيقاف الموسيقى", 0, function()
-    if CurrentMusic then 
-        CurrentMusic:Stop() CurrentMusic:Destroy() CurrentMusic = nil 
-        return false
+NewButton(MusicTab, "🎵 تشغيل موسيقى", Color3.fromRGB(70, 0, 150), function()
+    if CurrentMusic then CurrentMusic:Stop() CurrentMusic:Destroy() CurrentMusic = nil
     else
         CurrentMusic = Instance.new("Sound", workspace)
         CurrentMusic.SoundId = MusicIDs[MusicIndex]
         CurrentMusic:Play()
-        return true
     end
 end)
 
-CreateToggle(MusicTab, "⚡ زيادة السرعة (+50)", 45, function()
+NewButton(MusicTab, "⚡ سرعة +50", Color3.fromRGB(180, 120, 0), function()
     FlySpeed = FlySpeed + 50
-    return true
 end)
 
--- ========== [ التنقل والإخفاء ] ==========
-
+-- ========== [ التنقل ] ==========
 local function TabBtn(text, pos, target)
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, 0, 0, 40)
-    btn.Position = UDim2.new(0, 0, 0, pos)
-    btn.BackgroundTransparency = 1
-    btn.Text = text
-    btn.TextColor3 = Color3.white
-    btn.Parent = SideBar
-    btn.MouseButton1Click:Connect(function()
+    local b = Instance.new("TextButton")
+    b.Size = UDim2.new(1, 0, 0, 50)
+    b.Position = UDim2.new(0, 0, 0, pos)
+    b.BackgroundTransparency = 1
+    b.Text = text
+    b.TextColor3 = Color3.white
+    b.Font = Enum.Font.GothamBold
+    b.Parent = SideBar
+    b.MouseButton1Click:Connect(function()
         MainTab.Visible = false
         MusicTab.Visible = false
         target.Visible = true
     end)
 end
 
-TabBtn("الرئيسية", 0, MainTab)
-TabBtn("الموسيقى", 40, MusicTab)
+TabBtn("الرئيسية", 10, MainTab)
+TabBtn("المزايا", 60, MusicTab)
 
--- زر التصغير (X)
-local CloseBtn = Instance.new("TextButton")
-CloseBtn.Size = UDim2.new(0, 30, 0, 30)
-CloseBtn.Position = UDim2.new(1, -35, 0, 5)
-CloseBtn.Text = "—"
-CloseBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
-CloseBtn.Parent = MainFrame
-Instance.new("UICorner").Parent = CloseBtn
+-- زر التصغير
+local Close = Instance.new("TextButton", MainFrame)
+Close.Size = UDim2.new(0, 25, 0, 25)
+Close.Position = UDim2.new(1, -30, 0, 5)
+Close.Text = "X"
+Close.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+Close.TextColor3 = Color3.white
+Instance.new("UICorner", Close)
 
-CloseBtn.MouseButton1Click:Connect(function()
+Close.MouseButton1Click:Connect(function()
     MainFrame.Visible = false
     MinIcon.Visible = true
 end)
@@ -174,13 +167,16 @@ MinIcon.MouseButton1Click:Connect(function()
     MinIcon.Visible = false
 end)
 
--- ========== [ تشغيل العمليات ] ==========
-
+-- ========== [ المحرك ] ==========
 RunService.RenderStepped:Connect(function()
     if Flying and BodyVelocity and BodyGyro then
         BodyVelocity.Velocity = Camera.CFrame.LookVector * FlySpeed
         BodyGyro.CFrame = Camera.CFrame
     end
+    flyBtn.Text = Flying and "✈️ طيران: يعمل" or "✈️ طيران: إيقاف"
+    flyBtn.BackgroundColor3 = Flying and Color3.fromRGB(0, 120, 0) or Color3.fromRGB(40, 40, 40)
+    noclipBtn.Text = NoClip and "🧱 جدران: يعمل" or "🧱 جدران: إيقاف"
+    noclipBtn.BackgroundColor3 = NoClip and Color3.fromRGB(0, 120, 0) or Color3.fromRGB(40, 40, 40)
 end)
 
 RunService.Stepped:Connect(function()
@@ -190,5 +186,3 @@ RunService.Stepped:Connect(function()
         end
     end
 end)
-
-print("🔥 تم تشغيل ثائر X100 PRO بنجاح!")
