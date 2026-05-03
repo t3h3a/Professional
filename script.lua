@@ -335,15 +335,15 @@ local function StartFly()
 	local bv = Instance.new("BodyVelocity")
 	bv.Name     = "FlyVelocity"
 	bv.Velocity = Vector3.zero
-	bv.MaxForce = Vector3.new(1e5, 1e5, 1e5)
+	bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
 	bv.Parent   = hrp
 
 	-- Create BodyGyro
 	local bg = Instance.new("BodyGyro")
 	bg.Name      = "FlyGyro"
-	bg.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
-	bg.P         = 5000
-	bg.D         = 100
+	bg.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+	bg.P         = 9000
+	bg.D         = 500
 	bg.CFrame    = hrp.CFrame
 	bg.Parent    = hrp
 
@@ -355,6 +355,11 @@ local function StartFly()
 		if not Config.FlyEnabled or not currentHRP or not currentHum then
 			StopFly()
 			return
+		end
+
+		-- التأكد من أن اللاعب غير مثبت برمجياً (Anchored)
+		if hrp.Anchored then
+			hrp.Anchored = false
 		end
 
 		-- Check physics objects still exist
