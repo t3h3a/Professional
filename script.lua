@@ -61,6 +61,8 @@ local Lang = {
 		SpectatePlayer = "🎥  Spectate Player",
 		StopFollowSpec = "⏹  Stop Follow / Spectate",
 		PlayerList     = "Player List",
+		KillTarget     = "💀  Kill Target",
+		BringAll       = "🌪️  Bring All Players",
 		-- ESP page
 		ESPTitle       = "ESP / Overlay",
 		ESPSub         = "Admin visibility tools",
@@ -76,6 +78,7 @@ local Lang = {
 		Scripts        = "Scripts",
 		Animations     = "💃 Animations",
 		Cryptic        = "🔐 Cryptic Hub",
+		BTools         = "🛠️  F3X Building Tools",
 		-- Settings page
 		SettingsTitle  = "Settings",
 		SettingsSub    = "Admin panel configuration",
@@ -133,6 +136,8 @@ local Lang = {
 		SpectatePlayer = "🎥  مشاهدة اللاعب",
 		StopFollowSpec = "⏹  إيقاف التتبع / المشاهدة",
 		PlayerList     = "قائمة اللاعبين",
+		KillTarget     = "💀  قتل المستهدف",
+		BringAll       = "🌪️  سحب جميع اللاعبين",
 		-- ESP page
 		ESPTitle       = "الرادار / التراكب",
 		ESPSub         = "أدوات الرؤية للمشرف",
@@ -148,6 +153,7 @@ local Lang = {
 		Scripts        = "Scripts",
 		Animations     = "💃 Animations",
 		Cryptic        = "🔐 Cryptic Hub",
+		BTools         = "🛠️  أدوات البناء F3X",
 		-- Settings page
 		SettingsTitle  = "الإعدادات",
 		SettingsSub    = "إعدادات لوحة الإدارة",
@@ -542,6 +548,28 @@ local function StartSpectate(target)
 			Camera.CameraSubject = th
 		end
 	end)
+end
+
+local function KillPlayer(target)
+	local tc = target.Character
+	local th = tc and tc:FindFirstChildOfClass("Humanoid")
+	if th then
+		th.Health = 0
+	end
+end
+
+local function BringAllPlayers()
+	local hrp = GetHRP()
+	if not hrp then return end
+	for _, p in pairs(Players:GetPlayers()) do
+		if p ~= LocalPlayer then
+			local tc = p.Character
+			local thrp = tc and tc:FindFirstChild("HumanoidRootPart")
+			if thrp then
+				thrp.CFrame = hrp.CFrame + hrp.CFrame.LookVector * 3
+			end
+		end
+	end
 end
 
 -- ============================================================
@@ -1616,12 +1644,24 @@ local spcBtn = MakeButton(PagePlayers, "SpectatePlayer", Color3.fromRGB(30, 140,
 	if t then StartSpectate(t) else StopSpectate() end
 end)
 
-local stopBtn = MakeButton(PagePlayers, "StopFollowSpec", C.Danger, 7, function()
+local killBtn = MakeButton(PagePlayers, "KillTarget", C.Danger, 7, function()
+	local t = GetPlayerByName(playerInput.Text)
+	if t then KillPlayer(t) end
+end)
+
+local stopBtn = MakeButton(PagePlayers, "StopFollowSpec", Color3.fromRGB(100, 100, 120), 8, function()
 	StopFollow()
 	StopSpectate()
 end)
 
-local plSec2, plSec2L = MakeSectionLabel(PagePlayers, T("PlayerList"), 8)
+local plSecExtra, plSecExtraL = MakeSectionLabel(PagePlayers, T("General"), 9)
+
+local bringAllBtn = MakeButton(PagePlayers, "BringAll", C.AccentB, 10, function()
+	BringAllPlayers()
+end)
+
+
+local plSec2, plSec2L = MakeSectionLabel(PagePlayers, T("PlayerList"), 11)
 
 local playerListFrame = Instance.new("Frame")
 playerListFrame.Size          = UDim2.new(0.97, 0, 0, 100)
@@ -1759,6 +1799,15 @@ local animationsBtn = MakeButton(PageExternalScripts, "Animations", C.Accent, 3,
 	end)
 end)
 
+local btoolsBtn = MakeButton(PageExternalScripts, "BTools", Color3.fromRGB(200, 160, 40), 4, function()
+	task.spawn(function()
+		local ok, err = pcall(function()
+			loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()
+		end)
+		if not ok then warn("[THAER X100] BTools (Infinite Yield) failed: " .. tostring(err)) end
+	end)
+end)
+
 -- ============================================================
 -- PAGE: SETTINGS
 -- ============================================================
@@ -1862,8 +1911,11 @@ local function ApplyLanguage()
 	tpBtn.Text             = T("TeleportTo")
 	flwBtn.Text            = T("FollowPlayer")
 	spcBtn.Text            = T("SpectatePlayer")
+	killBtn.Text           = T("KillTarget")
 	stopBtn.Text           = T("StopFollowSpec")
-
+	plSecExtraL.Text       = "▸  " .. T("General"):upper()
+	bringAllBtn.Text       = T("BringAll")
+	
 	-- ESP page
 	espHeaderT.Text        = T("ESPTitle")
 	espHeaderT.TextXAlignment = align
@@ -1884,6 +1936,7 @@ local function ApplyLanguage()
 	extSec1L.Text          = "▸  " .. T("Scripts"):upper()
 	animationsBtn.Text     = T("Animations")
 	crypticBtn.Text        = T("Cryptic")
+	btoolsBtn.Text         = T("BTools")
 
 	-- Settings page
 	setHeaderT.Text        = T("SettingsTitle")
