@@ -970,7 +970,7 @@ end
 local function MakeBtn(parent, text, col, cb)
     col = col or C.A1
     local btn=Instance.new("TextButton")
-    btn.Size=UDim2.new(0.97,0,0,36); btn.BackgroundColor3=col
+    btn.Size=UDim2.new(0.97,0,0,40); btn.BackgroundColor3=col
     btn.BackgroundTransparency=0.18; btn.Text=text; btn.TextColor3=C.White
     btn.TextSize=12; btn.Font=Enum.Font.GothamSemibold; btn.Active=true; btn.Parent=parent
     Corner(UDim.new(0,9),btn)
@@ -1036,7 +1036,7 @@ local function MakeGridButtons(parent, items)
     grid.Parent = parent
 
     local layout = Instance.new("UIGridLayout")
-    layout.CellSize = UDim2.new(0.48, 0, 0, 36)
+    layout.CellSize = UDim2.new(0.48, 0, 0, 40)
     layout.CellPadding = UDim2.new(0, 6, 0, 6)
     layout.FillDirectionMaxCells = 2
     layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
@@ -1053,7 +1053,7 @@ local function MakeToggle(parent, text, col, cb)
     col = col or C.Green
     local on=false
     local row=Instance.new("Frame")
-    row.Size=UDim2.new(0.97,0,0,38); row.BackgroundColor3=C.Card
+    row.Size=UDim2.new(0.97,0,0,40); row.BackgroundColor3=C.Card
     row.BackgroundTransparency=0.1; row.BorderSizePixel=0; row.Active=true; row.Parent=parent
     Corner(UDim.new(0,9),row)
     Stroke(C.A1,1,0.78,row)
@@ -1099,7 +1099,7 @@ end
 local function MakeSlider(parent, text, min, max, default, col, cb)
     col = col or C.A1
     local container=Instance.new("Frame")
-    container.Size=UDim2.new(0.97,0,0,54); container.BackgroundColor3=C.Card
+    container.Size=UDim2.new(0.97,0,0,56); container.BackgroundColor3=C.Card
     container.BackgroundTransparency=0.1; container.BorderSizePixel=0; container.Active=true; container.Parent=parent
     Corner(UDim.new(0,9),container)
     Stroke(C.A1,1,0.78,container)
@@ -1170,11 +1170,27 @@ local function MakeInput(parent, placeholder, cb)
 end
 
 local function MakeSectionLabel(parent, text)
-    local lbl=Instance.new("TextLabel"); lbl.Size=UDim2.new(0.97,0,0,14)
+    local wrap=Instance.new("Frame")
+    wrap.Size=UDim2.new(0.97,0,0,28)
+    wrap.BackgroundTransparency=1
+    wrap.Parent=parent
+
+    local top=Instance.new("Frame")
+    top.Size=UDim2.new(1,0,0,6)
+    top.BackgroundTransparency=1
+    top.Parent=wrap
+
+    local lbl=Instance.new("TextLabel"); lbl.Size=UDim2.new(1,0,0,18)
     lbl.BackgroundTransparency=1; lbl.Text=text
     lbl.TextColor3=C.TextMuted; lbl.TextSize=9; lbl.Font=Enum.Font.GothamBold
-    lbl.TextXAlignment=Enum.TextXAlignment.Left; lbl.Parent=parent
-    return lbl
+    lbl.TextXAlignment=Enum.TextXAlignment.Left; lbl.Parent=wrap
+
+    local bottom=Instance.new("Frame")
+    bottom.Size=UDim2.new(1,0,0,4)
+    bottom.Position=UDim2.new(0,0,0,24)
+    bottom.BackgroundTransparency=1
+    bottom.Parent=wrap
+    return wrap
 end
 
 local function MakeInfoBox(parent, text, h)
@@ -1187,9 +1203,17 @@ local function MakeInfoBox(parent, text, h)
     return box
 end
 
+local function MakeSpacer(parent, h)
+    local s=Instance.new("Frame")
+    s.Size=UDim2.new(0.97,0,0,h or 6)
+    s.BackgroundTransparency=1
+    s.Parent=parent
+    return s
+end
+
 local function MakePageHeader(parent, title, sub)
     local head = Instance.new("Frame")
-    head.Size = UDim2.new(0.97, 0, 0, 82)
+    head.Size = UDim2.new(0.97, 0, 0, 84)
     head.BackgroundColor3 = C.Surface
     head.BackgroundTransparency = 0.03
     head.Parent = parent
@@ -1198,7 +1222,7 @@ local function MakePageHeader(parent, title, sub)
 
     local titleLbl = Instance.new("TextLabel")
     titleLbl.Size = UDim2.new(1, -20, 0, 24)
-    titleLbl.Position = UDim2.new(0, 10, 0, 10)
+    titleLbl.Position = UDim2.new(0, 12, 0, 12)
     titleLbl.BackgroundTransparency = 1
     titleLbl.Text = title
     titleLbl.TextColor3 = C.White
@@ -1209,7 +1233,7 @@ local function MakePageHeader(parent, title, sub)
 
     local subLbl = Instance.new("TextLabel")
     subLbl.Size = UDim2.new(1, -20, 0, 18)
-    subLbl.Position = UDim2.new(0, 10, 0, 36)
+    subLbl.Position = UDim2.new(0, 12, 0, 40)
     subLbl.BackgroundTransparency = 1
     subLbl.Text = sub
     subLbl.TextColor3 = C.TextSub
@@ -1224,15 +1248,15 @@ end
 local function InsertPageStyle(page)
     local pad = Instance.new("UIPadding")
     pad.PaddingTop = UDim.new(0, 8)
-    pad.PaddingBottom = UDim.new(0, 8)
-    pad.PaddingLeft = UDim.new(0, 2)
-    pad.PaddingRight = UDim.new(0, 2)
+    pad.PaddingBottom = UDim.new(0, 10)
+    pad.PaddingLeft = UDim.new(0, 8)
+    pad.PaddingRight = UDim.new(0, 8)
     pad.Parent = page
 end
 
 local function MakeHeroCard(parent)
     local card = Instance.new("Frame")
-    card.Size = UDim2.new(0.97, 0, 0, 150)
+    card.Size = UDim2.new(0.97, 0, 0, 120)
     card.BackgroundColor3 = C.Surface
     card.BackgroundTransparency = 0.05
     card.BorderSizePixel = 0
@@ -1248,7 +1272,7 @@ local function MakeHeroCard(parent)
 
     local avatar = Instance.new("ImageLabel")
     avatar.Size = UDim2.new(0, 78, 0, 78)
-    avatar.Position = UDim2.new(0, 14, 0, 36)
+    avatar.Position = UDim2.new(0, 16, 0.5, -39)
     avatar.BackgroundTransparency = 1
     avatar.Image = ""
     avatar.Parent = card
@@ -1265,8 +1289,8 @@ local function MakeHeroCard(parent)
     end)
 
     local greet = Instance.new("TextLabel")
-    greet.Size = UDim2.new(1, -110, 0, 32)
-    greet.Position = UDim2.new(0, 102, 0, 34)
+    greet.Size = UDim2.new(1, -118, 0, 24)
+    greet.Position = UDim2.new(0, 108, 0, 28)
     greet.BackgroundTransparency = 1
     greet.Text = "مرحبا بك " .. LP.Name
     greet.TextColor3 = C.White
@@ -1276,8 +1300,8 @@ local function MakeHeroCard(parent)
     greet.Parent = card
 
     local welcome = Instance.new("TextLabel")
-    welcome.Size = UDim2.new(1, -110, 0, 56)
-    welcome.Position = UDim2.new(0, 102, 0, 66)
+    welcome.Size = UDim2.new(1, -118, 0, 42)
+    welcome.Position = UDim2.new(0, 108, 0, 54)
     welcome.BackgroundTransparency = 1
     welcome.TextWrapped = true
     welcome.Text = "اهلا بك الى ثائر ادمن يمكنك اضافتي على صفحه الانستجرام لتحديثات او تحسينات المقترحه (t2h0a)"
@@ -1310,18 +1334,27 @@ end
 local P1 = CreatePage()
 local B1,I1,L1 = AddTab("✈️","طيران",P1)
 InsertPageStyle(P1)
+local p1list = Instance.new("UIListLayout")
+p1list.Padding = UDim.new(0, 8)
+p1list.HorizontalAlignment = Enum.HorizontalAlignment.Center
+p1list.SortOrder = Enum.SortOrder.LayoutOrder
+p1list.Parent = P1
 MakePageHeader(P1, "THAER X100", "التحكم الكامل بالطيران والجدران والحركة")
 MakeHeroCard(P1)
+MakeSpacer(P1, 6)
 MakeSectionLabel(P1, "  ─── الصفحة الرئيسية")
 MakeInfoBox(P1, "اهلا بك الى ثائر ادمن يمكنك اضافتي على صفحه الانستجرام لتحديثات او تحسينات المقترحه (t2h0a)", 52)
 
+MakeSpacer(P1, 6)
 MakeSectionLabel(P1, "  ─── الطيران وضع الشبح")
 MakeToggle(P1, "✈️  تفعيل الطيران الحر", C.A2, function(v) if v then StartFly() else StopFly() end end)
 MakeToggle(P1, "🧱  اختراق الجدران", C.Yellow, function(v) NoClip=v end)
+MakeSpacer(P1, 6)
 MakeSectionLabel(P1, "  ─── ضبط القيم")
 MakeSlider(P1,"⚡ سرعة الطيران",30,600,Settings.FlySpeed,C.A2,function(v) FlySpeed=v; Settings.FlySpeed=v; SaveSettings() end)
 MakeSlider(P1,"🏃 سرعة المشي (WalkSpeed)",0,250,Settings.WalkSpd,C.Cyan,function(v) SetWalk(v) end)
 MakeSlider(P1,"🚀 قوة القفز (JumpPower)",0,350,Settings.JumpPow,C.Pink,function(v) SetJump(v) end)
+MakeSpacer(P1, 6)
 MakeSectionLabel(P1, "  ─── اختصارات الكيبورد")
 MakeInfoBox(P1,"E: طيران/إيقاف  |  X: جدران\nShift: تسريع  |  C/Z: رفع/خفض السرعة\nF5: إخفاء/إظهار الواجهة",44)
 
@@ -1329,11 +1362,17 @@ MakeInfoBox(P1,"E: طيران/إيقاف  |  X: جدران\nShift: تسريع  |
 local P2 = CreatePage()
 AddTab("📍","مناطق",P2)
 InsertPageStyle(P2)
+local p2list = Instance.new("UIListLayout")
+p2list.Padding = UDim.new(0, 8)
+p2list.HorizontalAlignment = Enum.HorizontalAlignment.Center
+p2list.SortOrder = Enum.SortOrder.LayoutOrder
+p2list.Parent = P2
 MakePageHeader(P2, "المناطق", "احفظ وانتقل بسرعة بين 3 مواقع")
 
 for i=1,3 do
+    MakeSpacer(P2, 6)
     MakeSectionLabel(P2, "  ─── المنطقة "..i)
-    local row=Instance.new("Frame"); row.Size=UDim2.new(0.97,0,0,34); row.BackgroundTransparency=1; row.Parent=P2
+    local row=Instance.new("Frame"); row.Size=UDim2.new(0.97,0,0,40); row.BackgroundTransparency=1; row.Parent=P2
     local rlay=Instance.new("UIListLayout"); rlay.FillDirection=Enum.FillDirection.Horizontal; rlay.Padding=UDim.new(0,6); rlay.Parent=row
     local s=Instance.new("TextButton"); s.Size=UDim2.new(0.47,0,1,0); s.BackgroundColor3=C.A1
     s.BackgroundTransparency=0.18; s.Text="💾 حفظ "..i; s.TextColor3=C.White; s.TextSize=11
@@ -1344,6 +1383,7 @@ for i=1,3 do
     s.MouseButton1Click:Connect(function() SaveCP(i); Tween(s,TI.Snap,{BackgroundTransparency=0.45}); task.delay(0.15,function() Tween(s,TI.Fast,{BackgroundTransparency=0.18}) end) end)
     t.MouseButton1Click:Connect(function() LoadCP(i); Tween(t,TI.Snap,{BackgroundTransparency=0.45}); task.delay(0.15,function() Tween(t,TI.Fast,{BackgroundTransparency=0.18}) end) end)
 end
+MakeSpacer(P2, 6)
 MakeSectionLabel(P2,"  ─── اختصارات")
 MakeInfoBox(P2,"N/M/K → حفظ المناطق 1/2/3\nB/V/J → انتقل للمناطق 1/2/3",30)
 
@@ -1351,15 +1391,23 @@ MakeInfoBox(P2,"N/M/K → حفظ المناطق 1/2/3\nB/V/J → انتقل لل
 local P3 = CreatePage()
 AddTab("🎵","موسيقى",P3)
 InsertPageStyle(P3)
+local p3list = Instance.new("UIListLayout")
+p3list.Padding = UDim.new(0, 8)
+p3list.HorizontalAlignment = Enum.HorizontalAlignment.Center
+p3list.SortOrder = Enum.SortOrder.LayoutOrder
+p3list.Parent = P3
 MakePageHeader(P3, "الموسيقى", "تشغيل وتحكم بصوت نظيف وفخم")
 
 local Songs={{"أغنية 1","3017157406"},{"أغنية 2","1843170826"},{"أغنية 3","9126245770"},{"أغنية 4","6698976160"},{"أغنية 5","9032979010"}}
+MakeSpacer(P3, 6)
 MakeSectionLabel(P3,"  ─── مكتبة الأغاني")
 for _, s in Songs do
     MakeBtn(P3,"🎤  "..s[1], C.A3, function() PlaySound(s[2]) end)
 end
+MakeSpacer(P3, 6)
 MakeSectionLabel(P3,"  ─── أغنية مخصصة (اكتب ID ثم Enter)")
 MakeInput(P3,"أدخل ID الأغنية…",function(t) PlaySound(t) end)
+MakeSpacer(P3, 6)
 MakeSectionLabel(P3,"  ─── مستوى الصوت")
 MakeSlider(P3,"🔊 الصوت",0,100,50,C.A3,function(v) SoundVol=v/100; if CurrentSound then CurrentSound.Volume=SoundVol end; Settings.SoundVol=v; SaveSettings() end)
 MakeBtn(P3,"🔇  إيقاف الموسيقى",C.Red,StopSound)
@@ -1368,8 +1416,14 @@ MakeBtn(P3,"🔇  إيقاف الموسيقى",C.Red,StopSound)
 local P4 = CreatePage()
 AddTab("👥","لاعبين",P4)
 InsertPageStyle(P4)
+local p4list = Instance.new("UIListLayout")
+p4list.Padding = UDim.new(0, 8)
+p4list.HorizontalAlignment = Enum.HorizontalAlignment.Center
+p4list.SortOrder = Enum.SortOrder.LayoutOrder
+p4list.Parent = P4
 MakePageHeader(P4, "اللاعبين", "تحديد، متابعة، مشاهدة، ورمي")
 
+MakeSpacer(P4, 6)
 MakeSectionLabel(P4,"  ─── بحث عن لاعب (أول 3 حروف كافية)")
 MakeInput(P4,"اكتب اسم اللاعب ثم Enter…",function(t)
     local p=FindPlayer(t)
@@ -1377,6 +1431,7 @@ MakeInput(P4,"اكتب اسم اللاعب ثم Enter…",function(t)
     else Notify("❌ خطأ","لا يوجد: "..t) end
 end)
 
+MakeSpacer(P4, 6)
 MakeSectionLabel(P4,"  ─── أدوات اللاعب المحدد")
 MakeGridButtons(P4, {
     {text="🎯  تيليپورت للاعب", col=C.Green, cb=function() if CurrentTarget then TeleToPlayer(CurrentTarget) else Notify("⚠️","اختر لاعب أولاً") end end},
@@ -1392,16 +1447,17 @@ MakeBtn(P4,"👁️  إظهار كل التبويبات",C.A1,function()
     Notify("✅ تم","تم إظهار كل التبويبات")
 end)
 
+MakeSpacer(P4, 6)
 MakeSectionLabel(P4,"  ─── قائمة اللاعبين (اضغط لتحديد)")
 local listFrame=Instance.new("Frame"); listFrame.Size=UDim2.new(0.97,0,0,0); listFrame.AutomaticSize=Enum.AutomaticSize.Y
 listFrame.BackgroundTransparency=1; listFrame.Parent=P4
-ListLayout(Enum.FillDirection.Vertical,Enum.HorizontalAlignment.Left,4,listFrame)
+ListLayout(Enum.FillDirection.Vertical,Enum.HorizontalAlignment.Center,8,listFrame)
 
 local function RefreshList()
     for _,c in listFrame:GetChildren() do if not c:IsA("UIListLayout") then c:Destroy() end end
     for _,p in Players:GetPlayers() do
         if p~=LP then
-            local row=Instance.new("TextButton"); row.Size=UDim2.new(1,0,0,30); row.BackgroundColor3=C.SurfaceAlt
+            local row=Instance.new("TextButton"); row.Size=UDim2.new(1,0,0,36); row.BackgroundColor3=C.SurfaceAlt
             row.BackgroundTransparency=0.2; row.Text="  👤 "..p.Name.."  ("..p.DisplayName..")"
             row.TextColor3=C.Text; row.TextSize=11; row.Font=Enum.Font.GothamMedium
             row.TextXAlignment=Enum.TextXAlignment.Left; row.Active=true; row.Parent=listFrame
@@ -1421,8 +1477,14 @@ MakeBtn(P4,"🔄  تحديث القائمة",C.A1,RefreshList)
 local P5 = CreatePage()
 AddTab("👁️","ESP",P5)
 InsertPageStyle(P5)
+local p5list = Instance.new("UIListLayout")
+p5list.Padding = UDim.new(0, 8)
+p5list.HorizontalAlignment = Enum.HorizontalAlignment.Center
+p5list.SortOrder = Enum.SortOrder.LayoutOrder
+p5list.Parent = P5
 MakePageHeader(P5, "ESP و Aimbot", "رؤية اللاعبين وقفل الكاميرا")
 
+MakeSpacer(P5, 6)
 MakeSectionLabel(P5,"  ─── رؤية اللاعبين (ESP)")
 MakeToggle(P5,"👁️  تفعيل ESP — رؤية عبر الجدران",C.Cyan,function(v) ToggleESP(v) end)
 MakeToggle(P5,"🎯  Aimbot — قفل الكاميرا على الأقرب",C.Red,function(v) Aimbot_On=v; Notify("🎯 Aimbot",v and "مفعّل" or "إيقاف") end)
@@ -1430,6 +1492,7 @@ MakeToggle(P5,"👤  Follow Player",C.Green,function(v) Following=v end)
 MakeBtn(P5,"👁️  Spectate Target",C.A3,function() if CurrentTarget then Spectate(CurrentTarget) else Notify("⚠️","اختر لاعب أولاً") end end)
 MakeBtn(P5,"⛔  Stop Spectate",C.TextMuted,StopSpectate)
 MakeBtn(P5,"💥  Fling Target",C.Red,function() if CurrentTarget then Fling(CurrentTarget) else Notify("⚠️","اختر لاعب أولاً") end end)
+MakeSpacer(P5, 6)
 MakeSectionLabel(P5,"  ─── معلومات")
 MakeInfoBox(P5,"ESP: يعرض اسم اللاعب ومسافته فوق رأسه عبر الجدران.\n\nAimbot: يقفل الكاميرا على أقرب لاعب تلقائياً.",55)
 
@@ -1437,8 +1500,14 @@ MakeInfoBox(P5,"ESP: يعرض اسم اللاعب ومسافته فوق رأسه
 local P6 = CreatePage()
 AddTab("🛡️","أمان",P6)
 InsertPageStyle(P6)
+local p6list = Instance.new("UIListLayout")
+p6list.Padding = UDim.new(0, 8)
+p6list.HorizontalAlignment = Enum.HorizontalAlignment.Center
+p6list.SortOrder = Enum.SortOrder.LayoutOrder
+p6list.Parent = P6
 MakePageHeader(P6, "الأمان والإعدادات", "حفظ الإعدادات والحماية")
 
+MakeSpacer(P6, 6)
 MakeSectionLabel(P6,"  ─── نظام الحماية")
 MakeBtn(P6,"🛡️  إعادة تفعيل الحماية",C.Yellow,AntiBan)
 MakeBtn(P6,"💾  حفظ الإعدادات",C.Green,function() SaveSettings(); Notify("💾 تم","الإعدادات محفوظة ✅") end)
@@ -1451,6 +1520,7 @@ MakeBtn(P6,"👁️  إظهار كل التبويبات",C.Cyan,function()
     Notify("✅ تم","تم إظهار كل الصفحات")
 end)
 
+MakeSpacer(P6, 6)
 MakeSectionLabel(P6,"  ─── معلومات السكربت")
 MakeInfoBox(P6,[[🔥 THAER X100 — Ultimate Edition v3.0
 
