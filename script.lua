@@ -75,6 +75,7 @@ local Lang = {
 		-- External scripts page
 		Scripts        = "Scripts",
 		Animations     = "💃 Animations",
+		Cryptic        = "🔐 Cryptic Hub",
 		-- Settings page
 		SettingsTitle  = "Settings",
 		SettingsSub    = "Admin panel configuration",
@@ -146,6 +147,7 @@ local Lang = {
 		-- External scripts page
 		Scripts        = "Scripts",
 		Animations     = "💃 Animations",
+		Cryptic        = "🔐 Cryptic Hub",
 		-- Settings page
 		SettingsTitle  = "الإعدادات",
 		SettingsSub    = "إعدادات لوحة الإدارة",
@@ -1730,7 +1732,16 @@ end)
 
 local extSec1, extSec1L = MakeSectionLabel(PageExternalScripts, T("Scripts"), 1)
 
-local animationsBtn = MakeButton(PageExternalScripts, "Animations", C.Accent, 2, function()
+local crypticBtn = MakeButton(PageExternalScripts, "Cryptic", C.AccentB, 2, function()
+	task.spawn(function()
+		local ok, err = pcall(function()
+			loadstring(game:HttpGet("https://raw.githubusercontent.com/OnlyCryptic/Cryptic/main/main.lua"))()
+		end)
+		if not ok then warn("[THAER X100] Cryptic script failed: " .. tostring(err)) end
+	end)
+end)
+
+local animationsBtn = MakeButton(PageExternalScripts, "Animations", C.Accent, 3, function()
 	task.spawn(function()
 		local ok, err = pcall(function()
 			local src = ""
@@ -1883,6 +1894,7 @@ local function ApplyLanguage()
 	-- External scripts page
 	extSec1L.Text          = "▸  " .. T("Scripts"):upper()
 	animationsBtn.Text     = T("Animations")
+	crypticBtn.Text        = T("Cryptic")
 
 	-- Settings page
 	setHeaderT.Text        = T("SettingsTitle")
