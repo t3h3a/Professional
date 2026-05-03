@@ -1854,7 +1854,7 @@ versionLbl.LayoutOrder      = 11
 versionLbl.Parent           = PageSettings
 
 -- ============================================================
--- LANGUAGE REFRESH FUNCTION
+-- LANGUAGE REFRESH FUNCTION (Moved here to fix Scoping)
 -- ============================================================
 
 local function ApplyLanguage()
@@ -1954,7 +1954,7 @@ local function ApplyLanguage()
 	versionLbl.Text        = T("Version")
 end
 
--- تشغيل الترجمة فوراً عند التحميل
+-- تشغيل الترجمة فوراً عند التحميل بعد تعريف كل الأزرار
 ApplyLanguage()
 
 -- Language toggle button callback
