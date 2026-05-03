@@ -297,10 +297,11 @@ local function StopFly()
 	end
 	local h = GetHumanoid()
 	if h then
+		h:ChangeState(Enum.HumanoidStateType.GettingUp)
 		pcall(function() h.PlatformStand = false end)
 		-- دفع بسيط للأسفل للتأكد من استجابة الفيزياء فوراً
 		local hrp = GetHRP()
-		if hrp then hrp.Velocity = Vector3.new(0, -1, 0) end
+		if hrp then hrp.AssemblyLinearVelocity = Vector3.new(0, -1, 0) end
 	end
 end
 
@@ -320,9 +321,6 @@ local function StartFly()
 	end
 
 	Config.FlyEnabled = true
-
-	-- Apply PlatformStand safely
-	pcall(function() hum.PlatformStand = true end)
 
 	-- Clean up any leftover physics objects
 	for _, v in pairs(char:GetDescendants()) do
@@ -361,6 +359,13 @@ local function StartFly()
 		if hrp.Anchored then
 			hrp.Anchored = false
 		end
+
+		-- تطبيق حالة السباحة لضمان الحركة الانسيابية وصوت الطيران
+		if currentHum:GetState() ~= Enum.HumanoidStateType.Swimming then
+			currentHum:ChangeState(Enum.HumanoidStateType.Swimming)
+		end
+		-- تعطيل PlatformStand لأنه قد يعيق حركة السباحة الفيزيائية
+		currentHum.PlatformStand = false
 
 		-- Check physics objects still exist
 		if not hrp or not hrp.Parent or not bv or not bv.Parent or not bg or not bg.Parent then
@@ -407,11 +412,6 @@ local function StartFly()
 		local flatLook = Vector3.new(cf.LookVector.X, 0, cf.LookVector.Z)
 		if flatLook.Magnitude > 0.01 then
 			bg.CFrame = CFrame.new(Vector3.zero, flatLook)
-		end
-
-		-- Keep PlatformStand applied every frame (some games reset it)
-		if currentHum.PlatformStand == false then
-			pcall(function() currentHum.PlatformStand = true end)
 		end
 	end)
 end
