@@ -965,7 +965,9 @@ local function AddTab(icon, label, page)
     local data = {btn=btn,ico=ico,lbl=lbl}
     table.insert(AllTabs, data); table.insert(AllPages, page)
 
-    btn.MouseButton1Click:Connect(function() SwitchPage(page,btn,ico,lbl) end)
+    btn.MouseButton1Click:Connect(function()
+        SwitchPage(page,btn,ico,lbl)
+    end)
     btn.MouseEnter:Connect(function() if not page.Visible then Tween(btn,TI.Fast,{BackgroundTransparency=0.15}) end end)
     btn.MouseLeave:Connect(function() if not page.Visible then Tween(btn,TI.Fast,{BackgroundTransparency=0.3}) end end)
     return btn,ico,lbl
