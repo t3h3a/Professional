@@ -1,728 +1,1192 @@
 --[[
--- Professional Mobile Admin Panel - Standalone Unified Version
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
-local CoreGui = game:GetService("CoreGui")
-local LocalPlayer = Players.LocalPlayer
+╔══════════════════════════════════════════════════════════════════╗
+║                                                                  ║
+║          ██████╗ ██████╗  ██████╗     ██╗  ██╗ ██╗ ██████╗      ║
+║          ██╔══██╗██╔══██╗██╔═══██╗   ╚██╗██╔╝███║██╔═████╗     ║
+║          ██████╔╝██████╔╝██║   ██║    ╚███╔╝ ╚██║██║██╔██║     ║
+║          ██╔═══╝ ██╔══██╗██║   ██║    ██╔██╗  ██║████╔╝██║     ║
+║          ██║     ██║  ██║╚██████╔╝   ██╔╝ ██╗ ██║╚██████╔╝     ║
+║          ╚═╝     ╚═╝  ╚═╝ ╚═════╝    ╚═╝  ╚═╝ ╚═╝ ╚═════╝      ║
+║                                                                  ║
+║           ✈ طيران   🧱 جدران   📍 مناطق   🎵 موسيقى            ║
+║           👥 تعقب   ⚡ سرعة    🛡️ حماية   📱 جوال              ║
+║                                                                  ║
+║                 جميع الحقوق محفوظة © PRO X100                   ║
+╚══════════════════════════════════════════════════════════════════╝
+]]
 
--- ==============================
--- [1] Theme_Config
--- ==============================
-local Theme = {
-	Colors = {
-		Background       = Color3.fromRGB(12, 12, 18),
-		Surface          = Color3.fromRGB(20, 20, 30),
-		SurfaceAlt       = Color3.fromRGB(28, 28, 42),
-		Accent           = Color3.fromRGB(88, 130, 255),
-		AccentDark       = Color3.fromRGB(50, 90, 200),
-		AccentGlow       = Color3.fromRGB(120, 160, 255),
-		TextPrimary      = Color3.fromRGB(230, 230, 240),
-		TextSecondary    = Color3.fromRGB(140, 140, 165),
-		TextMuted        = Color3.fromRGB(80, 80, 100),
-		Success          = Color3.fromRGB(72, 210, 140),
-		Warning          = Color3.fromRGB(255, 185, 60),
-		Danger           = Color3.fromRGB(255, 85, 100),
-		SliderTrack      = Color3.fromRGB(35, 35, 55),
-		SliderFill       = Color3.fromRGB(88, 130, 255),
-		SliderThumb      = Color3.fromRGB(200, 215, 255),
-		Divider          = Color3.fromRGB(40, 40, 60),
-		FloatingIcon     = Color3.fromRGB(88, 130, 255),
-		Overlay          = Color3.fromRGB(5, 5, 10),
-	},
-	Transparency = {
-		Background   = 0.08,
-		Surface      = 0.12,
-		SurfaceAlt   = 0.05,
-		Stroke       = 0.75,
-		Overlay      = 0.35,
-	},
-	Radius = {
-		Panel        = UDim.new(0, 16),
-		Button       = UDim.new(0, 10),
-		Slider       = UDim.new(0, 6),
-		Chip         = UDim.new(0, 20),
-		FloatIcon    = UDim.new(0, 28),
-		Input        = UDim.new(0, 8),
-	},
-	Stroke = {
-		Thickness    = 1,
-		Color        = Color3.fromRGB(80, 100, 200),
-		Transparency = 0.72,
-	},
-	Gradients = {
-		Sidebar = {
-			Color = ColorSequence.new({
-				ColorSequenceKeypoint.new(0, Color3.fromRGB(18, 22, 50)),
-				ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 12, 30)),
-			}),
-			Rotation = 90,
-		},
-		Button = {
-			Color = ColorSequence.new({
-				ColorSequenceKeypoint.new(0, Color3.fromRGB(100, 140, 255)),
-				ColorSequenceKeypoint.new(1, Color3.fromRGB(60, 90, 200)),
-			}),
-			Rotation = 90,
-		},
-		Danger = {
-			Color = ColorSequence.new({
-				ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 100, 110)),
-				ColorSequenceKeypoint.new(1, Color3.fromRGB(200, 55, 70)),
-			}),
-			Rotation = 90,
-		},
-		Success = {
-			Color = ColorSequence.new({
-				ColorSequenceKeypoint.new(0, Color3.fromRGB(80, 220, 150)),
-				ColorSequenceKeypoint.new(1, Color3.fromRGB(50, 170, 110)),
-			}),
-			Rotation = 90,
-		},
-	},
-	Font = {
-		Title    = Enum.Font.GothamBold,
-		Body     = Enum.Font.Gotham,
-		Mono     = Enum.Font.RobotoMono,
-		Label    = Enum.Font.GothamMedium,
-	},
-	Size = {
-		TitleText  = 15,
-		BodyText   = 13,
-		LabelText  = 11,
-		SmallText  = 10,
-	}
+-- ════════════════════════════════════════════
+--              الخدمات الأساسية
+-- ════════════════════════════════════════════
+local Players          = game:GetService("Players")
+local UIS              = game:GetService("UserInputService")
+local RS               = game:GetService("RunService")
+local TweenService     = game:GetService("TweenService")
+local StarterGui       = game:GetService("StarterGui")
+local CoreGui          = game:GetService("CoreGui")
+
+local LP               = Players.LocalPlayer
+local Cam              = workspace.CurrentCamera
+local Char             = LP.Character or LP.CharacterAdded:Wait()
+local Hum              = Char:WaitForChild("Humanoid")
+local Root             = Char:WaitForChild("HumanoidRootPart")
+
+-- ════════════════════════════════════════════
+--               الثيم / الألوان
+-- ════════════════════════════════════════════
+local C = {
+    BG          = Color3.fromRGB(8,  8,  16),
+    Surface     = Color3.fromRGB(14, 14, 26),
+    SurfaceAlt  = Color3.fromRGB(22, 22, 38),
+    Sidebar     = Color3.fromRGB(10, 12, 30),
+    Accent      = Color3.fromRGB(80, 120, 255),
+    AccentDark  = Color3.fromRGB(50,  80, 200),
+    AccentGlow  = Color3.fromRGB(120,160, 255),
+    Green       = Color3.fromRGB(60, 210, 130),
+    Red         = Color3.fromRGB(255, 70,  90),
+    Yellow      = Color3.fromRGB(255,185,  50),
+    Text        = Color3.fromRGB(230,230,245),
+    TextSub     = Color3.fromRGB(140,140,170),
+    TextMuted   = Color3.fromRGB(70,  70, 100),
+    White       = Color3.fromRGB(255,255,255),
+    Track       = Color3.fromRGB(30,  30,  55),
 }
 
--- ==========================================
--- [[ 3. PHYSICS SYSTEM ]]
--- ==========================================
-local Physics = { flightActive = false, ghostActive = false, checkpoints = {nil, nil, nil} }
-local flightVelocity, flightConn, flightGyro, ghostLoop, ghostParts = nil, nil, nil, nil, {}
-local FLIGHT_SPEED, FLIGHT_BOOST = 60, 2.5
+local TI = {
+    Fast   = TweenInfo.new(0.15, Enum.EasingStyle.Quad),
+    Medium = TweenInfo.new(0.25, Enum.EasingStyle.Quad),
+    Spring = TweenInfo.new(0.30, Enum.EasingStyle.Back),
+}
 
-local function getCharacter() return LocalPlayer.Character end
-local function getRootPart() local c = getCharacter() return c and c:FindFirstChild("HumanoidRootPart") or (LocalPlayer.CharacterAdded:Wait():WaitForChild("HumanoidRootPart")) end
-local function getHumanoid() local c = getCharacter() return c and c:FindFirstChildOfClass("Humanoid") end
+-- ════════════════════════════════════════════
+--                 المتغيرات
+-- ════════════════════════════════════════════
+local Flying        = false
+local NoClip        = false
+local FlySpeed      = 100
+local BV, BG_Gyro   = nil, nil
+local Checkpoints   = {nil, nil, nil}
+local CurrentTarget = nil
+local WalkSpd       = 16
+local JumpPow       = 50
+local CurrentSound  = nil
+local SoundVol      = 0.5
+local UIHidden      = false
+local Keys          = {W=false,A=false,S=false,D=false}
 
-function Physics.setWalkSpeed(v) local h = getHumanoid() if h then h.WalkSpeed = math.clamp(v, 0, 500) end end
-function Physics.setJumpPower(v) local h = getHumanoid() if h then h.JumpPower = math.clamp(v, 0, 500) h.UseJumpPower = true end end
-
--- Optimization: Cache parts for Ghost Mode
-local function updateGhostParts()
-	ghostParts = {}
-	local char = getCharacter()
-	if char then
-		for _, p in char:GetDescendants() do
-			if p:IsA("BasePart") then table.insert(ghostParts, p) end
-		end
-	end
+-- ════════════════════════════════════════════
+--              نظام الإشعارات
+-- ════════════════════════════════════════════
+local function Notify(title, text, dur)
+    pcall(function()
+        StarterGui:SetCore("SendNotification",{
+            Title = title, Text = text, Duration = dur or 3
+        })
+    end)
 end
 
-function Physics.enableFlight()
-	if Physics.flightActive then return end
-	local root = getRootPart() if not root then return end
-	Physics.flightActive = true
-	Physics.disableGhost()
-	local hum = getHumanoid() if hum then hum.PlatformStand = true end
-	flightVelocity = Instance.new("BodyVelocity", root)
-	flightVelocity.MaxForce = Vector3.new(1e5, 1e5, 1e5)
-	flightGyro = Instance.new("BodyGyro", root)
-	flightGyro.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
-	flightGyro.P = 1e4
-	flightGyro.D = 500
-	flightConn = RunService.Heartbeat:Connect(function()
-		local camCF = workspace.CurrentCamera.CFrame
-		local direction = Vector3.zero
-		local speed = FLIGHT_SPEED * (UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) and FLIGHT_BOOST or 1)
-		if UserInputService:IsKeyDown(Enum.KeyCode.W) then direction += camCF.LookVector end
-		if UserInputService:IsKeyDown(Enum.KeyCode.S) then direction -= camCF.LookVector end
-		if UserInputService:IsKeyDown(Enum.KeyCode.D) then direction += camCF.RightVector end
-		if UserInputService:IsKeyDown(Enum.KeyCode.A) then direction -= camCF.RightVector end
-		if UserInputService:IsKeyDown(Enum.KeyCode.Space) then direction += Vector3.new(0, 1, 0) end
-		if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) or UserInputService:IsKeyDown(Enum.KeyCode.C) then direction -= Vector3.new(0, 1, 0) end
-		flightVelocity.Velocity = direction.Magnitude > 0 and direction.Unit * speed or Vector3.zero
-		flightGyro.CFrame = camCF
-	end)
+-- ════════════════════════════════════════════
+--              نظام الحماية (AntiBan)
+-- ════════════════════════════════════════════
+local function AntiBan()
+    pcall(function()
+        local mt = getrawmetatable(game)
+        local old = mt.__index
+        setreadonly(mt, false)
+        mt.__index = newcclosure(function(t, k)
+            if not checkcaller() then
+                if t:IsA("Humanoid") then
+                    if k == "WalkSpeed"  then return WalkSpd  end
+                    if k == "JumpPower"  then return JumpPow   end
+                end
+            end
+            return old(t, k)
+        end)
+        setreadonly(mt, true)
+        Notify("🛡️ PRO X100", "تم تفعيل الحماية")
+    end)
+end
+AntiBan()
+
+-- ════════════════════════════════════════════
+--          نظام الطيران (Flight System)
+-- ════════════════════════════════════════════
+local function StartFly()
+    if Flying then return end
+    Flying = true
+    Cam = workspace.CurrentCamera
+
+    BV = Instance.new("BodyVelocity")
+    BV.MaxForce = Vector3.new(1e5,1e5,1e5)
+    BV.Velocity  = Vector3.zero
+    BV.Parent    = Root
+
+    BG_Gyro = Instance.new("BodyGyro")
+    BG_Gyro.MaxTorque = Vector3.new(1e5,1e5,1e5)
+    BG_Gyro.P = 15000
+    BG_Gyro.CFrame = Root.CFrame
+    BG_Gyro.Parent = Root
+
+    Hum.PlatformStand = false
+    Hum.AutoRotate    = false
+    pcall(function() Hum:ChangeState(Enum.HumanoidStateType.Freefall) end)
+    Notify("✈️ طيران", "مفعّل | WASD للحركة | Shift للتسريع")
 end
 
-function Physics.disableFlight()
-	if not Physics.flightActive then return end
-	Physics.flightActive = false
-	if flightConn then flightConn:Disconnect() end
-	if flightVelocity then flightVelocity:Destroy() end
-	if flightGyro then flightGyro:Destroy() end
-	local hum = getHumanoid() if hum then hum.PlatformStand = false end
+local function StopFly()
+    if not Flying then return end
+    Flying = false
+    if BV      then BV:Destroy();     BV      = nil end
+    if BG_Gyro then BG_Gyro:Destroy(); BG_Gyro = nil end
+    Hum.PlatformStand = false
+    Hum.AutoRotate    = true
+    Notify("✈️ طيران", "إيقاف")
 end
 
-function Physics.toggleFlight()
-	if Physics.flightActive then Physics.disableFlight() return false else Physics.enableFlight() return true end
+RS.RenderStepped:Connect(function()
+    if not Flying or not BV then return end
+    Cam = workspace.CurrentCamera
+    local cf  = Cam.CFrame
+    local dir = Vector3.zero
+    if Keys.W then dir += cf.LookVector  end
+    if Keys.S then dir -= cf.LookVector  end
+    if Keys.D then dir += cf.RightVector end
+    if Keys.A then dir -= cf.RightVector end
+    if UIS:IsKeyDown(Enum.KeyCode.Space)       then dir += Vector3.yAxis end
+    if UIS:IsKeyDown(Enum.KeyCode.LeftControl) then dir -= Vector3.yAxis end
+    local boost = UIS:IsKeyDown(Enum.KeyCode.LeftShift) and 2.4 or 1
+    BV.Velocity = (dir.Magnitude > 0) and (dir.Unit * FlySpeed * boost) or Vector3.zero
+    if BG_Gyro then BG_Gyro.CFrame = cf end
+end)
+
+-- ════════════════════════════════════════════
+--         نظام اختراق الجدران (NoClip)
+-- ════════════════════════════════════════════
+RS.Stepped:Connect(function()
+    if not NoClip then return end
+    local c = LP.Character
+    if not c then return end
+    for _, p in c:GetDescendants() do
+        if p:IsA("BasePart") then
+            pcall(function() p.CanCollide = false end)
+        end
+    end
+end)
+
+-- ════════════════════════════════════════════
+--               نقاط الإحداثيات
+-- ════════════════════════════════════════════
+local function SaveCP(i)
+    Checkpoints[i] = Root.CFrame
+    Notify("📍 منطقة "..i, "تم الحفظ ✅")
 end
 
-function Physics.enableGhost()
-	if Physics.ghostActive then return end
-	Physics.ghostActive = true
-	Physics.disableFlight()
-	updateGhostParts()
-	ghostLoop = RunService.Stepped:Connect(function() 
-		for _, p in ipairs(ghostParts) do if p and p.Parent and p.CanCollide then p.CanCollide = false end end 
-	end)
+local function LoadCP(i)
+    if Checkpoints[i] then
+        Root.CFrame = Checkpoints[i] + Vector3.new(0,3,0)
+        Notify("🌀 منطقة "..i, "تم الانتقال 🚀")
+    else
+        Notify("⚠️ منطقة "..i, "لم يتم الحفظ بعد")
+    end
 end
 
-function Physics.disableGhost()
-	if not Physics.ghostActive then return end
-	Physics.ghostActive = false
-	if ghostLoop then ghostLoop:Disconnect() ghostLoop = nil end
-	for _, p in ipairs(ghostParts) do if p and p.Parent then p.CanCollide = true end end
+-- ════════════════════════════════════════════
+--           نظام تعقب اللاعبين
+-- ════════════════════════════════════════════
+local function FindPlayer(partial)
+    if not partial or partial == "" then return nil end
+    local low = partial:lower()
+    for _, p in Players:GetPlayers() do
+        if p ~= LP then
+            if p.Name:lower():sub(1,#low) == low or
+               p.DisplayName:lower():sub(1,#low) == low then
+                return p
+            end
+        end
+    end
+    for _, p in Players:GetPlayers() do
+        if p ~= LP then
+            if p.Name:lower():find(low,1,true) then return p end
+        end
+    end
+    return nil
 end
 
-function Physics.toggleGhost() if Physics.ghostActive then Physics.disableGhost() return false else Physics.enableGhost() return true end end
-function Physics.resetAll() Physics.disableFlight() Physics.disableGhost() Physics.setWalkSpeed(16) Physics.setJumpPower(50) end
-function Physics.saveCheckpoint(slot) local r = getRootPart() if r then Physics.checkpoints[slot] = r.CFrame return true end return false end
-function Physics.loadCheckpoint(slot) local r = getRootPart() if r and Physics.checkpoints[slot] then r.CFrame = Physics.checkpoints[slot] return true end return false end
-function Physics.clearCheckpoint(slot) slot = math.clamp(slot, 1, 3) Physics.checkpoints[slot] = nil end
-
--- ==========================================
--- [[ 4. TARGETING SYSTEM ]]
--- ==========================================
-local Targeting = { followActive = false, followLoop = nil }
-
-function Targeting.findPlayer(partial)
-	if not partial or partial == "" or #partial < 2 then return nil end
-	partial = partial:lower()
-	local bestMatch, bestScore = nil, math.huge
-	for _, p in Players:GetPlayers() do
-		local n, d = p.Name:lower(), p.DisplayName:lower()
-		if n:sub(1, #partial) == partial or d:sub(1, #partial) == partial then
-			if #n < bestScore then bestScore = #n bestMatch = p end
-		elseif n:find(partial) or d:find(partial) then
-			if not bestMatch then bestMatch = p end
-		end
-	end
-	return bestMatch
+local function TeleportToPlayer(p)
+    if p and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+        Root.CFrame = p.Character.HumanoidRootPart.CFrame + Vector3.new(3,0,0)
+        Notify("🎯 تيليپورت", "→ "..p.Name)
+    else
+        Notify("⚠️ خطأ", "اللاعب غير موجود")
+    end
 end
 
-function Targeting.getPlayerList() local l = {} for _, p in Players:GetPlayers() do table.insert(l, {name = p.Name, displayName = p.DisplayName, userId = p.UserId}) end return l end
-
-local function findTool(name)
-	name = name:lower()
-	for _, p in Players:GetPlayers() do
-		local b = p:FindFirstChild("Backpack")
-		if b then for _, v in b:GetChildren() do if v:IsA("Tool") and v.Name:lower():find(name) then return v end end end
-		local c = p.Character
-		if c then for _, v in c:GetChildren() do if v:IsA("Tool") and v.Name:lower():find(name) then return v end end end
-	end
-	for _, v in workspace:GetDescendants() do if v:IsA("Tool") and v.Name:lower():find(name) then return v end end
-	return nil
+-- ════════════════════════════════════════════
+--             نظام الموسيقى
+-- ════════════════════════════════════════════
+local function PlaySound(id)
+    if CurrentSound then CurrentSound:Stop(); CurrentSound:Destroy() end
+    local s = Instance.new("Sound")
+    s.SoundId = "rbxassetid://"..tostring(id)
+    s.Volume = SoundVol
+    s.Looped = true
+    s.Parent = Root
+    s:Play()
+    CurrentSound = s
+    Notify("🎵 موسيقى", "تشغيل ID: "..tostring(id))
 end
 
-function Targeting.startToolFollow(pName, tName, onStatus)
-	Targeting.stopToolFollow()
-	local target = Targeting.findPlayer(pName)
-	local tool = findTool(tName or "")
-	if not target then onStatus("Player not found: " .. pName, "danger") return end
-	if not tool or not tool:FindFirstChild("Handle") then onStatus("Tool not found: " .. (tName or ""), "danger") return end
-	local bp = Instance.new("BodyPosition", tool.Handle)
-	bp.Name = "_FollowBP" bp.MaxForce = Vector3.new(1e6, 1e6, 1e6) bp.P, bp.D = 5000, 500
-	Targeting.followActive = true
-	onStatus("Following: " .. target.Name, "success")
-	Targeting.followLoop = RunService.Heartbeat:Connect(function()
-		local char = target.Character local root = char and char:FindFirstChild("HumanoidRootPart")
-		if root and bp.Parent then bp.Position = bp.Position:Lerp(root.Position + Vector3.new(0, 3, 0), 0.15) end
-	end)
+local function StopSound()
+    if CurrentSound then CurrentSound:Stop(); CurrentSound:Destroy(); CurrentSound = nil end
+    Notify("🔇 موسيقى", "إيقاف")
 end
 
-function Targeting.stopToolFollow()
-	Targeting.followActive = false
-	if Targeting.followLoop then Targeting.followLoop:Disconnect() end
-	for _, v in workspace:GetDescendants() do if v.Name == "_FollowBP" then v:Destroy() end end
+-- ════════════════════════════════════════════
+--           السرعة والقفز
+-- ════════════════════════════════════════════
+local function SetWalk(v)
+    WalkSpd = v
+    pcall(function() Hum.WalkSpeed = v end)
 end
 
-function Targeting.teleportToPlayer(name, selfPlayer)
-	local t = Targeting.findPlayer(name)
-	local tr = t and t.Character and t.Character:FindFirstChild("HumanoidRootPart")
-	local sr = selfPlayer.Character and selfPlayer.Character:FindFirstChild("HumanoidRootPart")
-	if tr and sr then sr.CFrame = tr.CFrame + Vector3.new(3, 0, 0) return true, "Teleported to " .. t.Name end
-	return false, "Teleport Failed"
+local function SetJump(v)
+    JumpPow = v
+    pcall(function() Hum.JumpPower = v; Hum.UseJumpPower = true end)
 end
 
-function Targeting.getPlayerPosition(name)
-	local t = Targeting.findPlayer(name)
-	local r = t and t.Character and t.Character:FindFirstChild("HumanoidRootPart")
-	if r then
-		local p = r.Position return { player = t.Name, x = math.round(p.X), y = math.round(p.Y), z = math.round(p.Z) }
-	end
+-- إعادة التطبيق عند البعث
+LP.CharacterAdded:Connect(function(c)
+    Char = c
+    Hum  = c:WaitForChild("Humanoid")
+    Root = c:WaitForChild("HumanoidRootPart")
+    Cam  = workspace.CurrentCamera
+    SetWalk(WalkSpd); SetJump(JumpPow)
+    if Flying then
+        if BV      then BV:Destroy();     BV      = nil end
+        if BG_Gyro then BG_Gyro:Destroy(); BG_Gyro = nil end
+        Flying = false
+        task.wait(0.5)
+        StartFly()
+    end
+end)
+
+-- مدخلات لوحة المفاتيح
+UIS.InputBegan:Connect(function(inp, gp)
+    if gp then return end
+    local k = inp.KeyCode
+    if k == Enum.KeyCode.W then Keys.W = true
+    elseif k == Enum.KeyCode.A then Keys.A = true
+    elseif k == Enum.KeyCode.S then Keys.S = true
+    elseif k == Enum.KeyCode.D then Keys.D = true
+    elseif k == Enum.KeyCode.E then if Flying then StopFly() else StartFly() end
+    elseif k == Enum.KeyCode.X then
+        NoClip = not NoClip
+        Notify("🧱 جدران", NoClip and "مفعّل" or "إيقاف")
+    elseif k == Enum.KeyCode.N then SaveCP(1)
+    elseif k == Enum.KeyCode.M then SaveCP(2)
+    elseif k == Enum.KeyCode.K then SaveCP(3)
+    elseif k == Enum.KeyCode.B then LoadCP(1)
+    elseif k == Enum.KeyCode.V then LoadCP(2)
+    elseif k == Enum.KeyCode.J then LoadCP(3)
+    elseif k == Enum.KeyCode.C then FlySpeed = math.min(500, FlySpeed+25); Notify("⚡","سرعة: "..FlySpeed)
+    elseif k == Enum.KeyCode.Z then FlySpeed = math.max(30,  FlySpeed-25); Notify("⚡","سرعة: "..FlySpeed)
+    end
+end)
+UIS.InputEnded:Connect(function(inp)
+    local k = inp.KeyCode
+    if k==Enum.KeyCode.W then Keys.W=false
+    elseif k==Enum.KeyCode.A then Keys.A=false
+    elseif k==Enum.KeyCode.S then Keys.S=false
+    elseif k==Enum.KeyCode.D then Keys.D=false end
+end)
+
+-- ════════════════════════════════════════════════════════════════
+--
+--                    بناء الواجهة الاحترافية
+--
+-- ════════════════════════════════════════════════════════════════
+
+-- ── مساعدات UI ──────────────────────────────────────────────────
+local function Corner(r, p)
+    local c = Instance.new("UICorner"); c.CornerRadius = r; c.Parent = p; return c
+end
+local function Stroke(col, th, tr, p)
+    local s = Instance.new("UIStroke")
+    s.Color = col; s.Thickness = th; s.Transparency = tr; s.Parent = p; return s
+end
+local function Gradient(seq, rot, p)
+    local g = Instance.new("UIGradient"); g.Color = seq; g.Rotation = rot; g.Parent = p; return g
+end
+local function Tween(obj, info, props)
+    TweenService:Create(obj, info, props):Play()
 end
 
--- ==========================================
--- [[ 5. UI CONSTRUCTOR SYSTEM ]]
--- ==========================================
-local UI = {}
+-- ── ScreenGui ───────────────────────────────────────────────────
+local GUI = Instance.new("ScreenGui")
+GUI.Name            = "PRO_X100"
+GUI.ResetOnSpawn    = false
+GUI.ZIndexBehavior  = Enum.ZIndexBehavior.Sibling
+GUI.DisplayOrder    = 99
+GUI.Parent          = CoreGui
 
-function UI.createScreenGui(name)
-	local sg = Instance.new("ScreenGui", RunService:IsStudio() and LocalPlayer.PlayerGui or CoreGui)
-	sg.Name = name sg.ResetOnSpawn = false sg.IgnoreGuiInset = true
-	return sg
+-- ════════════════════════════════════════════
+--           أيقونة التصغير (Mini Icon)
+-- ════════════════════════════════════════════
+local Mini = Instance.new("TextButton")
+Mini.Name              = "MiniIcon"
+Mini.Size              = UDim2.new(0, 52, 0, 52)
+Mini.Position          = UDim2.new(1, -68, 0.72, 0)
+Mini.BackgroundColor3  = C.Accent
+Mini.Text              = "⚙"
+Mini.TextSize          = 24
+Mini.TextColor3        = C.White
+Mini.Font              = Enum.Font.GothamBold
+Mini.Visible           = false
+Mini.ZIndex            = 50
+Mini.Active            = true
+Mini.Parent            = GUI
+Corner(UDim.new(1,0), Mini)
+Stroke(C.AccentGlow, 2, 0.5, Mini)
+Gradient(ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(120,160,255)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(60, 90, 200)),
+}), 135, Mini)
+
+-- سحب الأيقونة
+local mDrag, mMoved, mOffset, mStart = false, false, Vector2.zero, Vector2.zero
+Mini.InputBegan:Connect(function(i)
+    if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+        mDrag = true; mMoved = false
+        mStart  = Vector2.new(i.Position.X, i.Position.Y)
+        mOffset = Vector2.new(i.Position.X - Mini.AbsolutePosition.X, i.Position.Y - Mini.AbsolutePosition.Y)
+    end
+end)
+UIS.InputChanged:Connect(function(i)
+    if mDrag and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
+        local vp = workspace.CurrentCamera.ViewportSize
+        local sz = Mini.AbsoluteSize
+        local x  = math.clamp(i.Position.X - mOffset.X, 0, vp.X - sz.X)
+        local y  = math.clamp(i.Position.Y - mOffset.Y, 0, vp.Y - sz.Y)
+        Mini.Position = UDim2.fromOffset(x, y)
+        mMoved = (Vector2.new(i.Position.X, i.Position.Y) - mStart).Magnitude > 6
+    end
+end)
+UIS.InputEnded:Connect(function(i)
+    if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+        mDrag = false
+    end
+end)
+
+-- ════════════════════════════════════════════
+--         اللوحة الرئيسية (Main Frame)
+-- ════════════════════════════════════════════
+local Panel = Instance.new("Frame")
+Panel.Name             = "Panel"
+Panel.Size             = UDim2.new(0, 500, 0, 290)
+Panel.Position         = UDim2.new(0.5,-250, 0.5,-145)
+Panel.BackgroundColor3 = C.BG
+Panel.BackgroundTransparency = 0.08
+Panel.BorderSizePixel  = 0
+Panel.Active           = true
+Panel.Draggable        = true
+Panel.Parent           = GUI
+Corner(UDim.new(0,16), Panel)
+Stroke(C.Accent, 1.5, 0.45, Panel)
+
+-- ── شريط التدرج العلوي ──────────────────────────────────────────
+local TopGlow = Instance.new("Frame")
+TopGlow.Size             = UDim2.new(1, 0, 0, 2)
+TopGlow.BackgroundColor3 = C.AccentGlow
+TopGlow.BorderSizePixel  = 0
+TopGlow.ZIndex           = 2
+TopGlow.Parent           = Panel
+Corner(UDim.new(0,16), TopGlow)
+Gradient(ColorSequence.new({
+    ColorSequenceKeypoint.new(0,  Color3.fromRGB(100,180,255)),
+    ColorSequenceKeypoint.new(0.5,Color3.fromRGB(180,100,255)),
+    ColorSequenceKeypoint.new(1,  Color3.fromRGB(100,180,255)),
+}), 0, TopGlow)
+
+-- ════════════════════════════════════════════
+--             شريط العنوان
+-- ════════════════════════════════════════════
+local TitleBar = Instance.new("Frame")
+TitleBar.Size             = UDim2.new(1, 0, 0, 34)
+TitleBar.BackgroundColor3 = C.Surface
+TitleBar.BackgroundTransparency = 0.0
+TitleBar.BorderSizePixel  = 0
+TitleBar.ZIndex           = 3
+TitleBar.Parent           = Panel
+Corner(UDim.new(0,16), TitleBar)
+Gradient(ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(14,20,55)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(10,12,30)),
+}), 0, TitleBar)
+
+local TitleIcon = Instance.new("TextLabel")
+TitleIcon.Size               = UDim2.new(0, 30, 1, 0)
+TitleIcon.Position           = UDim2.new(0, 8, 0, 0)
+TitleIcon.BackgroundTransparency = 1
+TitleIcon.Text               = "🔥"
+TitleIcon.TextSize           = 18
+TitleIcon.Font               = Enum.Font.GothamBold
+TitleIcon.ZIndex             = 4
+TitleIcon.Parent             = TitleBar
+
+local TitleLbl = Instance.new("TextLabel")
+TitleLbl.Size               = UDim2.new(0, 180, 1, 0)
+TitleLbl.Position           = UDim2.new(0, 36, 0, 0)
+TitleLbl.BackgroundTransparency = 1
+TitleLbl.Text               = "PRO X100"
+TitleLbl.TextColor3         = C.White
+TitleLbl.TextSize           = 14
+TitleLbl.Font               = Enum.Font.GothamBold
+TitleLbl.TextXAlignment     = Enum.TextXAlignment.Left
+TitleLbl.ZIndex             = 4
+TitleLbl.Parent             = TitleBar
+
+local SubLbl = Instance.new("TextLabel")
+SubLbl.Size               = UDim2.new(0, 200, 0.55, 0)
+SubLbl.Position           = UDim2.new(0, 36, 0.45, 0)
+SubLbl.BackgroundTransparency = 1
+SubLbl.Text               = "Ultimate Edition • v2.0"
+SubLbl.TextColor3         = C.TextMuted
+SubLbl.TextSize           = 9
+SubLbl.Font               = Enum.Font.GothamMedium
+SubLbl.TextXAlignment     = Enum.TextXAlignment.Left
+SubLbl.ZIndex             = 4
+SubLbl.Parent             = TitleBar
+
+-- زر الإخفاء
+local HideBtn = Instance.new("TextButton")
+HideBtn.Size             = UDim2.new(0, 26, 0, 20)
+HideBtn.Position         = UDim2.new(1, -32, 0.5, -10)
+HideBtn.BackgroundColor3 = C.Red
+HideBtn.Text             = "─"
+HideBtn.TextColor3       = C.White
+HideBtn.TextSize         = 13
+HideBtn.Font             = Enum.Font.GothamBold
+HideBtn.ZIndex           = 10
+HideBtn.Parent           = TitleBar
+Corner(UDim.new(0,6), HideBtn)
+
+local function ShowPanel()
+    Panel.Visible = true
+    Mini.Visible  = false
+    UIHidden      = false
+    Panel.BackgroundTransparency = 1
+    Tween(Panel, TI.Medium, {BackgroundTransparency = 0.08})
 end
 
-function UI.createMainPanel(parent)
-	local f = Instance.new("Frame", parent)
-	f.Size = UDim2.new(0.85, 0, 0.85, 0)
-	f.Position = UDim2.new(0.5, 0, 0.5, 0)
-	f.AnchorPoint = Vector2.new(0.5, 0.5)
-	f.BackgroundColor3 = Theme.Colors.Background
-	f.BorderSizePixel = 0
-	f.ClipsDescendants = true
-	Instance.new("UICorner", f).CornerRadius = Theme.Radius.Panel
-	local s = Instance.new("UIStroke", f)
-	s.Color = Theme.Stroke.Color s.Thickness = Theme.Stroke.Thickness s.Transparency = Theme.Stroke.Transparency
-	
-	local sz = Instance.new("UISizeConstraint", f)
-	sz.MaxSize = Vector2.new(450, 520) sz.MinSize = Vector2.new(300, 300)
-	return f
+local function HidePanel()
+    UIHidden = true
+    Tween(Panel, TI.Fast, {BackgroundTransparency = 1})
+    task.delay(0.2, function()
+        if UIHidden then
+            Panel.Visible = false
+            Panel.BackgroundTransparency = 0.08
+            Mini.Visible = true
+        end
+    end)
+    Notify("PRO X100", "الواجهة مصغرة | اضغط الأيقونة لإعادة الفتح")
 end
 
-function UI.createSidebar(parent)
-	local s = Instance.new("Frame", parent)
-	s.Size = UDim2.new(0, 75, 1, -60)
-	s.Position = UDim2.new(0, 10, 0, 50)
-	s.BackgroundTransparency = 1
+HideBtn.MouseButton1Click:Connect(HidePanel)
+Mini.MouseButton1Click:Connect(function()
+    if not mMoved then ShowPanel() end
+end)
+UIS.InputBegan:Connect(function(i, gp)
+    if not gp and i.KeyCode == Enum.KeyCode.F5 then
+        if UIHidden then ShowPanel() else HidePanel() end
+    end
+end)
 
-	local g = Instance.new("UIGradient", s)
-	g.Color = Theme.Gradients.Sidebar.Color
-	g.Rotation = Theme.Gradients.Sidebar.Rotation
-	
-	local l = Instance.new("UIListLayout", s)
-	l.Padding = UDim.new(0, 8) l.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	return s
+-- ════════════════════════════════════════════
+--           القائمة الجانبية (Sidebar)
+-- ════════════════════════════════════════════
+local Sidebar = Instance.new("Frame")
+Sidebar.Size             = UDim2.new(0, 96, 1, -34)
+Sidebar.Position         = UDim2.new(0, 0, 0, 34)
+Sidebar.BackgroundColor3 = C.Sidebar
+Sidebar.BackgroundTransparency = 0.0
+Sidebar.BorderSizePixel  = 0
+Sidebar.Parent           = Panel
+Corner(UDim.new(0,12), Sidebar)
+Gradient(ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(10,14,40)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(6, 8, 22)),
+}), 90, Sidebar)
+
+-- خط فاصل عمودي
+local Divider = Instance.new("Frame")
+Divider.Size             = UDim2.new(0, 1, 1, -34)
+Divider.Position         = UDim2.new(0, 96, 0, 34)
+Divider.BackgroundColor3 = C.Accent
+Divider.BackgroundTransparency = 0.7
+Divider.BorderSizePixel  = 0
+Divider.Parent           = Panel
+
+local SideLayout = Instance.new("UIListLayout")
+SideLayout.Padding              = UDim.new(0, 5)
+SideLayout.HorizontalAlignment  = Enum.HorizontalAlignment.Center
+SideLayout.Parent               = Sidebar
+
+local SidePadding = Instance.new("UIPadding")
+SidePadding.PaddingTop  = UDim.new(0, 8)
+SidePadding.Parent      = Sidebar
+
+-- ════════════════════════════════════════════
+--           منطقة المحتوى (Content)
+-- ════════════════════════════════════════════
+local ContentArea = Instance.new("Frame")
+ContentArea.Size             = UDim2.new(1, -102, 1, -38)
+ContentArea.Position         = UDim2.new(0, 100, 0, 36)
+ContentArea.BackgroundTransparency = 1
+ContentArea.BorderSizePixel  = 0
+ContentArea.Parent           = Panel
+
+-- ════════════════════════════════════════════
+--         دوال مساعدة لبناء الواجهة
+-- ════════════════════════════════════════════
+
+local AllTabs  = {}
+local AllPages = {}
+
+local function CreatePage()
+    local sf = Instance.new("ScrollingFrame")
+    sf.Size                = UDim2.new(1, -4, 1, -6)
+    sf.Position            = UDim2.new(0, 2, 0, 4)
+    sf.BackgroundTransparency = 1
+    sf.BorderSizePixel     = 0
+    sf.CanvasSize          = UDim2.new(0,0,0,0)
+    sf.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    sf.ScrollingDirection  = Enum.ScrollingDirection.Y
+    sf.ScrollBarThickness  = 4
+    sf.ScrollBarImageColor3 = C.Accent
+    sf.Visible             = false
+    sf.Active              = true
+    sf.Parent              = ContentArea
+
+    local lay = Instance.new("UIListLayout")
+    lay.Padding             = UDim.new(0, 8)
+    lay.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    lay.Parent              = sf
+
+    local pad = Instance.new("UIPadding")
+    pad.PaddingTop   = UDim.new(0, 6)
+    pad.PaddingBottom = UDim.new(0, 10)
+    pad.Parent       = sf
+
+    return sf
 end
 
-function UI.createContentArea(parent)
-	local c = Instance.new("ScrollingFrame", parent)
-	c.Size = UDim2.new(1, -100, 1, -70)
-	c.Position = UDim2.new(0, 90, 0, 60)
-	c.BackgroundTransparency = 1 c.BorderSizePixel = 0
-	c.ScrollBarThickness = 1 c.ScrollBarImageColor3 = Theme.Colors.Accent
-	c.CanvasSize = UDim2.new(0,0,0,0)
-	c.AutomaticCanvasSize = Enum.AutomaticSize.Y
-	return c
+local function SwitchPage(page, tabBtn)
+    for _, p in AllPages  do p.Visible = false end
+    for _, t in AllTabs do
+        t.BackgroundColor3  = C.SurfaceAlt
+        t.BackgroundTransparency = 0.3
+        Tween(t, TI.Fast, {TextColor3 = C.TextSub})
+    end
+    page.Visible = true
+    tabBtn.BackgroundColor3 = C.Accent
+    tabBtn.BackgroundTransparency = 0.15
+    Tween(tabBtn, TI.Fast, {TextColor3 = C.White})
 end
 
-function UI.createTabButton(parent, label, icon)
-	local b = Instance.new("TextButton", parent)
-	b.Size = UDim2.new(0, 65, 0, 65)
-	b.BackgroundColor3 = Theme.Colors.Surface
-	b.BackgroundTransparency = 1 b.Text = ""
-	Instance.new("UICorner", b).CornerRadius = Theme.Radius.Button
-	
-	local i = Instance.new("TextLabel", b)
-	i.Size = UDim2.new(1, 0, 0.6, 0) i.Text = icon i.TextSize = 24 i.BackgroundTransparency = 1
-	i.TextColor3 = Theme.Colors.TextSecondary i.Font = Theme.Font.Body
-	
-	local t = Instance.new("TextLabel", b)
-	t.Size = UDim2.new(1, 0, 0.4, 0) t.Position = UDim2.new(0, 0, 0.6, 0)
-	t.Text = label t.TextSize = Theme.Size.SmallText t.BackgroundTransparency = 1
-	t.TextColor3 = Theme.Colors.TextSecondary t.Font = Theme.Font.Label
-	
-	local function applyFeedback(active)
-		local color = active and Theme.Colors.TextPrimary or Theme.Colors.TextSecondary
-		TweenService:Create(i, TweenInfo.new(0.2), {TextColor3 = color}):Play()
-		TweenService:Create(t, TweenInfo.new(0.2), {TextColor3 = color}):Play()
-	end
+local function AddTab(icon, label, page)
+    local btn = Instance.new("TextButton")
+    btn.Size             = UDim2.new(0.92, 0, 0, 58)
+    btn.BackgroundColor3 = C.SurfaceAlt
+    btn.BackgroundTransparency = 0.3
+    btn.Text             = ""
+    btn.Active           = true
+    btn.Parent           = Sidebar
+    Corner(UDim.new(0,10), btn)
+    Stroke(C.Accent, 1, 0.78, btn)
 
-	b.MouseEnter:Connect(function() if t.TextColor3 ~= Theme.Colors.TextPrimary then applyFeedback(true) end end)
-	b.MouseLeave:Connect(function() if t.TextColor3 ~= Theme.Colors.TextPrimary then applyFeedback(false) end end)
-	
-	b.MouseButton1Down:Connect(function()
-		TweenService:Create(b, TweenInfo.new(0.1), {Size = UDim2.new(0, 60, 0, 60)}):Play()
-	end)
-	b.MouseButton1Up:Connect(function()
-		TweenService:Create(b, TweenInfo.new(0.1), {Size = UDim2.new(0, 65, 0, 65)}):Play()
-	end)
-	
-	return b, t, i
+    local ico = Instance.new("TextLabel")
+    ico.Size               = UDim2.new(1,0,0,26)
+    ico.Position           = UDim2.new(0,0,0,8)
+    ico.BackgroundTransparency = 1
+    ico.Text               = icon
+    ico.TextSize           = 20
+    ico.Font               = Enum.Font.GothamBold
+    ico.TextColor3         = C.TextSub
+    ico.Parent             = btn
+
+    local lbl = Instance.new("TextLabel")
+    lbl.Size               = UDim2.new(1,0,0,14)
+    lbl.Position           = UDim2.new(0,0,0,36)
+    lbl.BackgroundTransparency = 1
+    lbl.Text               = label
+    lbl.TextSize           = 9
+    lbl.Font               = Enum.Font.GothamBold
+    lbl.TextColor3         = C.TextMuted
+    lbl.Parent             = btn
+
+    table.insert(AllTabs, btn)
+    table.insert(AllPages, page)
+
+    btn.MouseButton1Click:Connect(function()
+        SwitchPage(page, btn)
+        Tween(ico, TI.Fast, {TextColor3 = C.AccentGlow})
+        Tween(lbl, TI.Fast, {TextColor3 = C.TextSub})
+    end)
+
+    btn.MouseEnter:Connect(function()
+        if AllPages[table.find(AllPages, page)] ~= nil and page.Visible then return end
+        Tween(btn, TI.Fast, {BackgroundTransparency = 0.15})
+    end)
+    btn.MouseLeave:Connect(function()
+        if page.Visible then return end
+        Tween(btn, TI.Fast, {BackgroundTransparency = 0.3})
+        Tween(ico, TI.Fast, {TextColor3 = C.TextSub})
+        Tween(lbl, TI.Fast, {TextColor3 = C.TextMuted})
+    end)
+
+    return btn, ico, lbl
 end
 
-function UI.createCard(parent, size)
-	local c = Instance.new("Frame", parent)
-	c.Size = size or UDim2.new(1, -10, 0, 0)
-	c.AutomaticSize = Enum.AutomaticSize.Y
-	c.BackgroundColor3 = Theme.Colors.Surface
-	c.BackgroundTransparency = Theme.Transparency.Surface
-	Instance.new("UICorner", c).CornerRadius = Theme.Radius.Button
-	local p = Instance.new("UIPadding", c)
-	p.PaddingLeft = UDim.new(0, 10) p.PaddingRight = UDim.new(0, 10)
-	p.PaddingTop = UDim.new(0, 10) p.PaddingBottom = UDim.new(0, 10)
-	Instance.new("UIListLayout", c).Padding = UDim.new(0, 8)
-	
-	local s = Instance.new("UIStroke", c)
-	s.Color = Theme.Colors.Divider s.Thickness = 1 s.Transparency = 0.8
-	
-	return c
+-- ── أداة: زر عادي ───────────────────────────────────────────────
+local function MakeButton(parent, text, icon, colorDef, cb)
+    colorDef = colorDef or C.Accent
+    local btn = Instance.new("TextButton")
+    btn.Size             = UDim2.new(0.96, 0, 0, 38)
+    btn.BackgroundColor3 = colorDef
+    btn.BackgroundTransparency = 0.15
+    btn.Text             = icon and (icon.." "..text) or text
+    btn.TextColor3       = C.White
+    btn.TextSize         = 12
+    btn.Font             = Enum.Font.GothamSemibold
+    btn.Active           = true
+    btn.Parent           = parent
+    Corner(UDim.new(0,9), btn)
+    Stroke(colorDef, 1, 0.6, btn)
+
+    btn.MouseButton1Down:Connect(function()
+        Tween(btn, TI.Fast, {BackgroundTransparency = 0.4})
+    end)
+    btn.MouseButton1Up:Connect(function()
+        Tween(btn, TI.Fast, {BackgroundTransparency = 0.15})
+        if cb then cb() end
+    end)
+    btn.MouseLeave:Connect(function()
+        Tween(btn, TI.Fast, {BackgroundTransparency = 0.15})
+    end)
+    return btn
 end
 
-function UI.createSectionHeader(parent, text)
-	local h = Instance.new("TextLabel", parent)
-	h.Size = UDim2.new(1, 0, 0, 20) h.BackgroundTransparency = 1
-	h.Text = text h.TextColor3 = Theme.Colors.AccentGlow
-	h.TextSize = Theme.Size.LabelText h.Font = Theme.Font.Title h.TextXAlignment = Enum.TextXAlignment.Left
+-- ── أداة: Toggle ────────────────────────────────────────────────
+local function MakeToggle(parent, text, icon, cb)
+    local on = false
+
+    local row = Instance.new("Frame")
+    row.Size             = UDim2.new(0.96, 0, 0, 40)
+    row.BackgroundColor3 = C.Surface
+    row.BackgroundTransparency = 0.1
+    row.BorderSizePixel  = 0
+    row.Active           = true
+    row.Parent           = parent
+    Corner(UDim.new(0,9), row)
+    Stroke(C.Accent, 1, 0.75, row)
+
+    local lbl = Instance.new("TextLabel")
+    lbl.Size               = UDim2.new(1,-60,1,0)
+    lbl.Position           = UDim2.new(0,10,0,0)
+    lbl.BackgroundTransparency = 1
+    lbl.Text               = icon and (icon.." "..text) or text
+    lbl.TextColor3         = C.Text
+    lbl.TextSize           = 12
+    lbl.Font               = Enum.Font.GothamMedium
+    lbl.TextXAlignment     = Enum.TextXAlignment.Left
+    lbl.Parent             = row
+
+    local track = Instance.new("TextButton")
+    track.Size             = UDim2.new(0, 42, 0, 22)
+    track.Position         = UDim2.new(1,-50, 0.5,-11)
+    track.BackgroundColor3 = C.Track
+    track.Text             = ""
+    track.BorderSizePixel  = 0
+    track.Active           = true
+    track.Parent           = row
+    Corner(UDim.new(0,11), track)
+
+    local thumb = Instance.new("Frame")
+    thumb.Size             = UDim2.new(0,16,0,16)
+    thumb.Position         = UDim2.new(0,3,0.5,-8)
+    thumb.BackgroundColor3 = C.TextSub
+    thumb.BorderSizePixel  = 0
+    thumb.Parent           = track
+    Corner(UDim.new(1,0), thumb)
+
+    local function Toggle()
+        on = not on
+        if on then
+            Tween(track, TI.Medium, {BackgroundColor3 = C.Green})
+            Tween(thumb, TI.Spring, {Position = UDim2.new(0,23,0.5,-8), BackgroundColor3 = C.White})
+            Tween(lbl,   TI.Fast,   {TextColor3 = C.Green})
+        else
+            Tween(track, TI.Medium, {BackgroundColor3 = C.Track})
+            Tween(thumb, TI.Spring, {Position = UDim2.new(0,3,0.5,-8), BackgroundColor3 = C.TextSub})
+            Tween(lbl,   TI.Fast,   {TextColor3 = C.Text})
+        end
+        if cb then cb(on) end
+    end
+
+    track.MouseButton1Click:Connect(Toggle)
+    row.InputBegan:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+            Toggle()
+        end
+    end)
+
+    return row, function() return on end
 end
 
-function UI.createSlider(parent, label, min, max, default, callback)
-	local f = Instance.new("Frame", parent) f.Size = UDim2.new(1, 0, 0, 45) f.BackgroundTransparency = 1
-	local l = Instance.new("TextLabel", f) l.Size = UDim2.new(1, 0, 0, 15) l.Text = label .. ": " .. default
-	l.TextColor3 = Theme.Colors.TextSecondary l.TextSize = Theme.Size.SmallText l.Font = Theme.Font.Label
-	l.BackgroundTransparency = 1 l.TextXAlignment = Enum.TextXAlignment.Left
-	
-	local track = Instance.new("Frame", f) track.Size = UDim2.new(1, 0, 0, 4) track.Position = UDim2.new(0, 0, 0, 25)
-	track.BackgroundColor3 = Theme.Colors.SliderTrack Instance.new("UICorner", track).CornerRadius = Theme.Radius.Slider
-	
-	local fill = Instance.new("Frame", track) fill.BackgroundColor3 = Theme.Colors.SliderFill
-	fill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0) Instance.new("UICorner", fill).CornerRadius = Theme.Radius.Slider
-	
-	local thumb = Instance.new("Frame", track) thumb.Size = UDim2.new(0, 12, 0, 12) thumb.AnchorPoint = Vector2.new(0.5, 0.5)
-	thumb.Position = UDim2.new((default - min) / (max - min), 0, 0.5, 0) thumb.BackgroundColor3 = Theme.Colors.SliderThumb
-	Instance.new("UICorner", thumb).CornerRadius = UDim.new(1, 0)
-	
-	local dragging = false
-	local function update(input)
-		local pos = math.clamp((input.Position.X - track.AbsolutePosition.X) / track.AbsoluteSize.X, 0, 1)
-		local val = math.floor(min + (max - min) * pos)
-		fill.Size = UDim2.new(pos, 0, 1, 0) 
-		thumb.Position = UDim2.new(pos, 0, 0.5, 0)
-		l.Text = label .. ": " .. val 
-		callback(val)
-	end
-	thumb.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true end end)
-	UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end)
-	UserInputService.InputChanged:Connect(function(i) if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then update(i) end end)
-	
-	return f, function() return tonumber(l.Text:match("%d+$")) end
+-- ── أداة: Slider ────────────────────────────────────────────────
+local function MakeSlider(parent, text, icon, min, max, default, cb)
+    local container = Instance.new("Frame")
+    container.Size             = UDim2.new(0.96, 0, 0, 56)
+    container.BackgroundColor3 = C.Surface
+    container.BackgroundTransparency = 0.1
+    container.BorderSizePixel  = 0
+    container.Active           = true
+    container.Parent           = parent
+    Corner(UDim.new(0,9), container)
+    Stroke(C.Accent, 1, 0.75, container)
+
+    local headerRow = Instance.new("Frame")
+    headerRow.Size               = UDim2.new(1,-16, 0, 20)
+    headerRow.Position           = UDim2.new(0,8,0,6)
+    headerRow.BackgroundTransparency = 1
+    headerRow.Parent             = container
+
+    local nameLbl = Instance.new("TextLabel")
+    nameLbl.Size               = UDim2.new(0.75, 0, 1, 0)
+    nameLbl.BackgroundTransparency = 1
+    nameLbl.Text               = icon and (icon.." "..text) or text
+    nameLbl.TextColor3         = C.Text
+    nameLbl.TextSize           = 11
+    nameLbl.Font               = Enum.Font.GothamMedium
+    nameLbl.TextXAlignment     = Enum.TextXAlignment.Left
+    nameLbl.Parent             = headerRow
+
+    local valLbl = Instance.new("TextLabel")
+    valLbl.Size               = UDim2.new(0.25, 0, 1, 0)
+    valLbl.Position           = UDim2.new(0.75, 0, 0, 0)
+    valLbl.BackgroundTransparency = 1
+    valLbl.Text               = tostring(default)
+    valLbl.TextColor3         = C.AccentGlow
+    valLbl.TextSize           = 11
+    valLbl.Font               = Enum.Font.GothamBold
+    valLbl.TextXAlignment     = Enum.TextXAlignment.Right
+    valLbl.Parent             = headerRow
+
+    local track = Instance.new("Frame")
+    track.Size             = UDim2.new(1,-16, 0, 10)
+    track.Position         = UDim2.new(0,8,0,32)
+    track.BackgroundColor3 = C.Track
+    track.BorderSizePixel  = 0
+    track.Active           = true
+    track.Parent           = container
+    Corner(UDim.new(1,0), track)
+
+    local fill = Instance.new("Frame")
+    local initR = (default - min) / (max - min)
+    fill.Size             = UDim2.new(initR, 0, 1, 0)
+    fill.BackgroundColor3 = C.Accent
+    fill.BorderSizePixel  = 0
+    fill.Parent           = track
+    Corner(UDim.new(1,0), fill)
+    Gradient(ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(120,160,255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(60, 90, 220)),
+    }), 0, fill)
+
+    local thumb = Instance.new("Frame")
+    thumb.Size             = UDim2.new(0, 18, 0, 18)
+    thumb.Position         = UDim2.new(initR, -9, 0.5, -9)
+    thumb.BackgroundColor3 = C.White
+    thumb.BorderSizePixel  = 0
+    thumb.ZIndex           = 3
+    thumb.Active           = true
+    thumb.Parent           = track
+    Corner(UDim.new(1,0), thumb)
+    Stroke(C.AccentGlow, 2, 0.4, thumb)
+
+    local dragging = false
+
+    local function Update(x)
+        local abs = track.AbsoluteSize.X
+        if abs <= 0 then return end
+        local ratio = math.clamp((x - track.AbsolutePosition.X) / abs, 0, 1)
+        local val   = math.round(min + ratio * (max - min))
+        fill.Size         = UDim2.new(ratio, 0, 1, 0)
+        thumb.Position    = UDim2.new(ratio, -9, 0.5, -9)
+        valLbl.Text       = tostring(val)
+        if cb then cb(val) end
+    end
+
+    track.InputBegan:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+            dragging = true; Update(i.Position.X)
+        end
+    end)
+    thumb.InputBegan:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+        end
+    end)
+    UIS.InputChanged:Connect(function(i)
+        if not dragging then return end
+        if i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch then
+            Update(i.Position.X)
+        end
+    end)
+    UIS.InputEnded:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+        end
+    end)
+
+    return container
 end
 
-function UI.createToggle(parent, label, default)
-	local b = Instance.new("TextButton", parent) b.Size = UDim2.new(1, 0, 0, 40) b.BackgroundColor3 = Theme.Colors.SurfaceAlt
-	b.Text = "  " .. label b.TextColor3 = Theme.Colors.TextPrimary b.TextXAlignment = Enum.TextXAlignment.Left
-	b.Font = Theme.Font.Body b.TextSize = Theme.Size.BodyText
-	Instance.new("UICorner", b).CornerRadius = Theme.Radius.Input
-	
-	local indicator = Instance.new("Frame", b) indicator.Size = UDim2.new(0, 40, 0, 20) indicator.Position = UDim2.new(1, -50, 0.5, -10)
-	indicator.BackgroundColor3 = default and Theme.Colors.Success or Theme.Colors.SliderTrack
-	local ic = Instance.new("UICorner", indicator) ic.CornerRadius = UDim.new(1, 0)
-	
-	local active = default
-	local thumb = Instance.new("Frame", indicator)
-	thumb.Size = UDim2.new(0, 16, 0, 16)
-	thumb.Position = default and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
-	thumb.BackgroundColor3 = Color3.new(1,1,1)
-	Instance.new("UICorner", thumb).CornerRadius = UDim.new(1,0)
+-- ── أداة: Input Box ─────────────────────────────────────────────
+local function MakeInput(parent, placeholder, cb)
+    local container = Instance.new("Frame")
+    container.Size             = UDim2.new(0.96, 0, 0, 38)
+    container.BackgroundColor3 = C.SurfaceAlt
+    container.BackgroundTransparency = 0.1
+    container.BorderSizePixel  = 0
+    container.Parent           = parent
+    Corner(UDim.new(0,9), container)
+    Stroke(C.Accent, 1, 0.68, container)
 
-	b.MouseButton1Click:Connect(function() 
-		active = not active 
-		TweenService:Create(indicator, TweenInfo.new(0.2), {BackgroundColor3 = active and Theme.Colors.Success or Theme.Colors.SliderTrack}):Play()
-		TweenService:Create(thumb, TweenInfo.new(0.2), {Position = active and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)}):Play()
-	end)
-	
-	return b, function() return active end, function(v) 
-		active = v 
-		indicator.BackgroundColor3 = v and Theme.Colors.Success or Theme.Colors.SliderTrack 
-		thumb.Position = v and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8) 
-	end
+    local box = Instance.new("TextBox")
+    box.Size               = UDim2.new(1,-16, 1, -8)
+    box.Position           = UDim2.new(0,8,0,4)
+    box.BackgroundTransparency = 1
+    box.PlaceholderText    = placeholder
+    box.PlaceholderColor3  = C.TextMuted
+    box.TextColor3         = C.Text
+    box.TextSize           = 12
+    box.Font               = Enum.Font.GothamMedium
+    box.ClearTextOnFocus   = false
+    box.TextXAlignment     = Enum.TextXAlignment.Left
+    box.Parent             = container
+
+    box.FocusLost:Connect(function(enter)
+        if enter and box.Text ~= "" then
+            if cb then cb(box.Text) end
+            box.Text = ""
+        end
+    end)
+
+    return container, box
 end
 
-function UI.createButton(parent, text, style)
-	local b = Instance.new("TextButton", parent) b.Size = UDim2.new(1, 0, 0, 40)
-	b.BackgroundColor3 = Theme.Colors[style:sub(1,1):upper()..style:sub(2)] or Theme.Colors.Accent
-	b.Text = text b.TextColor3 = Color3.new(1,1,1) b.Font = Theme.Font.Label b.TextSize = Theme.Size.BodyText
-	b.AutoButtonColor = false
-	Instance.new("UICorner", b).CornerRadius = Theme.Radius.Button
-	
-	local styleKey = style:sub(1,1):upper()..style:sub(2)
-	if Theme.Gradients[styleKey] then
-		local g = Instance.new("UIGradient", b)
-		g.Color = Theme.Gradients[styleKey].Color
-		g.Rotation = Theme.Gradients[styleKey].Rotation
-	end
-	
-	b.MouseButton1Down:Connect(function() TweenService:Create(b, TweenInfo.new(0.1), {BackgroundTransparency = 0.3, Size = UDim2.new(0.98, 0, 0, 38)}):Play() end)
-	b.MouseButton1Up:Connect(function() TweenService:Create(b, TweenInfo.new(0.1), {BackgroundTransparency = 0, Size = UDim2.new(1, 0, 0, 40)}):Play() end)
-	
-	return b
+-- ── أداة: Section Divider ────────────────────────────────────────
+local function MakeDivider(parent, text)
+    local row = Instance.new("Frame")
+    row.Size               = UDim2.new(0.96, 0, 0, 18)
+    row.BackgroundTransparency = 1
+    row.Parent             = parent
+
+    local line = Instance.new("Frame")
+    line.Size              = UDim2.new(1, 0, 0, 1)
+    line.Position          = UDim2.new(0, 0, 0.5, 0)
+    line.BackgroundColor3  = C.Accent
+    line.BackgroundTransparency = 0.7
+    line.BorderSizePixel   = 0
+    line.Parent            = row
+
+    if text then
+        local lbl = Instance.new("TextLabel")
+        lbl.Size               = UDim2.new(0, 0, 1, 0)
+        lbl.AutomaticSize      = Enum.AutomaticSize.X
+        lbl.Position           = UDim2.new(0.02, 0, 0, 0)
+        lbl.BackgroundColor3   = C.BG
+        lbl.BackgroundTransparency = 0.08
+        lbl.Text               = "  "..text.."  "
+        lbl.TextColor3         = C.TextMuted
+        lbl.TextSize           = 9
+        lbl.Font               = Enum.Font.GothamBold
+        lbl.Parent             = row
+        Corner(UDim.new(0,4), lbl)
+    end
+    return row
 end
 
-function UI.createInput(parent, placeholder)
-	local i = Instance.new("TextBox", parent) i.Size = UDim2.new(1, 0, 0, 40) i.BackgroundColor3 = Theme.Colors.SurfaceAlt
-	i.PlaceholderText = placeholder i.Text = "" i.TextColor3 = Theme.Colors.TextPrimary
-	i.PlaceholderColor3 = Theme.Colors.TextMuted i.Font = Theme.Font.Body i.TextSize = Theme.Size.BodyText
-	Instance.new("UICorner", i).CornerRadius = Theme.Radius.Input
-	local p = Instance.new("UIPadding", i) p.PaddingLeft = UDim.new(0, 8)
-	return i
-end
+-- ════════════════════════════════════════════════════════════════
+--                    بناء الصفحات
+-- ════════════════════════════════════════════════════════════════
 
-function UI.showToast(parent, msg, style)
-	local t = Instance.new("Frame", parent) t.Size = UDim2.new(0, 260, 0, 50) t.Position = UDim2.new(0.5, -130, 1, 60)
-	t.BackgroundColor3 = Theme.Colors.Surface t.BorderSizePixel = 0 Instance.new("UICorner", t).CornerRadius = Theme.Radius.Button
-	
-	local styleKey = style:sub(1,1):upper()..style:sub(2)
-	local l = Instance.new("TextLabel", t) l.Size = UDim2.new(1, -20, 1, 0) l.Position = UDim2.new(0, 10, 0, 0)
-	l.Text = msg l.TextColor3 = Theme.Colors[styleKey] or Color3.new(1,1,1)
-	l.BackgroundTransparency = 1 l.Font = Theme.Font.Label l.TextSize = Theme.Size.SmallText l.TextWrapped = true
-	
-	local s = Instance.new("UIStroke", t)
-	s.Color = Theme.Colors[styleKey] or Theme.Colors.Accent s.Thickness = 1 s.Transparency = 0.5
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+-- 1. صفحة الطيران والحركة
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+local P_Fly  = CreatePage()
+local T_Fly, TI_Fly = AddTab("✈️","طيران", P_Fly)
 
-	TweenService:Create(t, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = UDim2.new(0.5, -130, 0.85, -50)}):Play()
-	task.delay(2.5, function() 
-		TweenService:Create(t, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Position = UDim2.new(0.5, -130, 1, 60)}):Play() 
-		task.wait(0.3) t:Destroy() 
-	end)
-end
+MakeDivider(P_Fly, "الطيران وضع الشبح")
+MakeToggle(P_Fly, "تفعيل الطيران الحر", "✈️", function(v)
+    if v then StartFly() else StopFly() end
+end)
+MakeToggle(P_Fly, "اختراق الجدران", "🧱", function(v)
+    NoClip = v
+end)
 
-function UI.createFloatingIcon(parent, callback)
-	local b = Instance.new("TextButton", parent) b.Size = UDim2.new(0, 55, 0, 55) b.Position = UDim2.new(1, -65, 0.5, -27)
-	b.BackgroundColor3 = Theme.Colors.FloatingIcon b.Text = "⚡" b.TextSize = 24 b.TextColor3 = Color3.new(1,1,1)
-	b.AutoButtonColor = true
-	Instance.new("UICorner", b).CornerRadius = Theme.Radius.FloatIcon
-	local s = Instance.new("UIStroke", b)
-	s.Color = Color3.new(1,1,1) s.Thickness = 2 s.Transparency = 0.6
-	
-	b.MouseButton1Down:Connect(function() TweenService:Create(b, TweenInfo.new(0.1), {Size = UDim2.new(0, 48, 0, 48)}):Play() end)
-	b.MouseButton1Up:Connect(function() TweenService:Create(b, TweenInfo.new(0.1), {Size = UDim2.new(0, 55, 0, 55)}):Play() end)
-	
-	b.MouseButton1Click:Connect(callback) return b
-end
+MakeDivider(P_Fly, "ضبط السرعة")
+MakeSlider(P_Fly, "سرعة الطيران", "⚡", 30, 500, 100, function(v)
+    FlySpeed = v
+end)
+MakeSlider(P_Fly, "سرعة المشي (WalkSpeed)", "🏃", 0, 250, 16, function(v)
+    SetWalk(v)
+end)
+MakeSlider(P_Fly, "قوة القفز (JumpPower)", "🚀", 0, 350, 50, function(v)
+    SetJump(v)
+end)
 
--- ==========================================
--- [[ 6. MAIN APPLICATION LOGIC ]]
--- ==========================================
-local screenGui = UI.createScreenGui("AdvancedAdminDashboard")
-local mainPanel = UI.createMainPanel(screenGui)
-mainPanel.Visible = false
-
--- Create CanvasGroup for high-quality fade animations
-local cg = Instance.new("CanvasGroup", mainPanel)
-cg.Size = UDim2.new(1, 0, 1, 0)
-cg.BackgroundTransparency = 1
-cg.Name = "AnimationContainer"
-
-local sidebar = UI.createSidebar(mainPanel)
-local contentArea = UI.createContentArea(mainPanel)
-
-local activeTab = nil
-local tabButtons, pages = {}, {}
-
-local function setActiveTab(name, btn, icon, lbl)
-	if activeTab == name then return end
-	for n, d in tabButtons do
-		TweenService:Create(d.btn, TweenInfo.new(0.15), {BackgroundTransparency = 1}):Play()
-		TweenService:Create(d.icon, TweenInfo.new(0.15), {TextColor3 = Theme.Colors.TextSecondary}):Play()
-		TweenService:Create(d.lbl, TweenInfo.new(0.15), {TextColor3 = Theme.Colors.TextSecondary}):Play()
-		if pages[n] then pages[n].Visible = false end
-	end
-	activeTab = name
-	TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundTransparency = 0.6}):Play()
-	TweenService:Create(icon, TweenInfo.new(0.15), {TextColor3 = Theme.Colors.AccentGlow}):Play()
-	TweenService:Create(lbl, TweenInfo.new(0.15), {TextColor3 = Theme.Colors.TextPrimary}):Play()
-	if pages[name] then pages[name].Visible = true end
-end
-
-local function registerTab(name, icon, label)
-	local btn, lbl, iconLbl = UI.createTabButton(sidebar, label, icon)
-	tabButtons[name] = {btn = btn, icon = iconLbl, lbl = lbl}
-	local page = Instance.new("Frame", contentArea)
-	page.Size = UDim2.new(1, 0, 0, 0) page.AutomaticSize = Enum.AutomaticSize.Y
-	page.BackgroundTransparency = 1 page.Visible = false
-	Instance.new("UIListLayout", page).Padding = UDim.new(0, 10)
-	pages[name] = page
-	btn.MouseButton1Click:Connect(function() setActiveTab(name, btn, iconLbl, lbl) end)
-	return page
-end
-
-local function createNote(parent, text)
-	local n = Instance.new("TextLabel", parent)
-	n.Size = UDim2.new(1, 0, 0, 30) n.BackgroundTransparency = 1
-	n.Text = text n.TextColor3 = Theme.Colors.TextMuted
-	n.TextSize = Theme.Size.SmallText n.Font = Theme.Font.Body
-	n.TextWrapped = true n.TextXAlignment = Enum.TextXAlignment.Left
-	return n
-end
-
-local movePage = registerTab("move", "🏃", "Movement")
-local ghostPage = registerTab("ghost", "👻", "Ghost")
-local checkPage = registerTab("check", "📍", "Locations")
-local targetPage = registerTab("target", "🎯", "Targeting")
-
+MakeDivider(P_Fly, "اختصارات")
 do
-	local card = UI.createCard(movePage)
-	UI.createSectionHeader(card, "Speed & Jump")
-	UI.createSlider(card, "Walk Speed", 0, 250, 16, Physics.setWalkSpeed)
-	UI.createSlider(card, "Jump Power", 0, 250, 50, Physics.setJumpPower)
-	UI.createButton(card, "Reset Movement", "danger").MouseButton1Click:Connect(function() Physics.setWalkSpeed(16) Physics.setJumpPower(50) UI.showToast(screenGui, "Movement Reset", "info") end)
-	
-	local flightCard = UI.createCard(movePage)
-	UI.createSectionHeader(flightCard, "Flight Navigation")
-	local fTog = UI.createToggle(flightCard, "Enable Flight Mode", false)
-	fTog.MouseButton1Click:Connect(function() 
-		local active = Physics.toggleFlight() 
-		UI.showToast(screenGui, active and "✈ Flight Mode Enabled" or "Flight Mode Disabled", active and "success" or "info") 
-	end)
-	createNote(flightCard, "WASD to Move | Space to Ascend | Ctrl to Descend | Shift to Boost")
+    local info = Instance.new("TextLabel")
+    info.Size              = UDim2.new(0.96, 0, 0, 68)
+    info.BackgroundColor3  = C.Surface
+    info.BackgroundTransparency = 0.1
+    info.TextColor3        = C.TextSub
+    info.TextSize          = 10
+    info.Font              = Enum.Font.GothamMedium
+    info.Text              = "E: طيران  |  X: جدران  |  Shift: تسريع\nC/Z: رفع/خفض سرعة الطيران\nF5: إخفاء/إظهار الواجهة"
+    info.TextWrapped       = true
+    info.Parent            = P_Fly
+    Corner(UDim.new(0,9), info)
+    Stroke(C.Accent, 1, 0.8, info)
 end
 
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+-- 2. صفحة المناطق (Checkpoints)
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+local P_CP = CreatePage()
+AddTab("📍","مناطق", P_CP)
+
+for i = 1, 3 do
+    MakeDivider(P_CP, "المنطقة "..i)
+    local row = Instance.new("Frame")
+    row.Size               = UDim2.new(0.96, 0, 0, 38)
+    row.BackgroundTransparency = 1
+    row.Parent             = P_CP
+
+    local rowLayout = Instance.new("UIListLayout")
+    rowLayout.FillDirection = Enum.FillDirection.Horizontal
+    rowLayout.Padding       = UDim.new(0, 6)
+    rowLayout.Parent        = row
+
+    local saveBtn = Instance.new("TextButton")
+    saveBtn.Size             = UDim2.new(0.48, 0, 1, 0)
+    saveBtn.BackgroundColor3 = C.Accent
+    saveBtn.BackgroundTransparency = 0.15
+    saveBtn.Text             = "💾 حفظ المنطقة "..i
+    saveBtn.TextColor3       = C.White
+    saveBtn.TextSize         = 11
+    saveBtn.Font             = Enum.Font.GothamSemibold
+    saveBtn.Active           = true
+    saveBtn.Parent           = row
+    Corner(UDim.new(0,9), saveBtn)
+
+    local teleBtn = Instance.new("TextButton")
+    teleBtn.Size             = UDim2.new(0.48, 0, 1, 0)
+    teleBtn.BackgroundColor3 = C.Green
+    teleBtn.BackgroundTransparency = 0.15
+    teleBtn.Text             = "🌀 انتقل "..i
+    teleBtn.TextColor3       = C.White
+    teleBtn.TextSize         = 11
+    teleBtn.Font             = Enum.Font.GothamSemibold
+    teleBtn.Active           = true
+    teleBtn.Parent           = row
+    Corner(UDim.new(0,9), teleBtn)
+
+    saveBtn.MouseButton1Click:Connect(function() SaveCP(i) end)
+    teleBtn.MouseButton1Click:Connect(function() LoadCP(i) end)
+
+    saveBtn.MouseButton1Down:Connect(function() Tween(saveBtn, TI.Fast, {BackgroundTransparency=0.4}) end)
+    saveBtn.MouseButton1Up:Connect(function()   Tween(saveBtn, TI.Fast, {BackgroundTransparency=0.15}) end)
+    teleBtn.MouseButton1Down:Connect(function() Tween(teleBtn, TI.Fast, {BackgroundTransparency=0.4}) end)
+    teleBtn.MouseButton1Up:Connect(function()   Tween(teleBtn, TI.Fast, {BackgroundTransparency=0.15}) end)
+end
+
+MakeDivider(P_CP, "اختصارات لوحة المفاتيح")
 do
-	local card = UI.createCard(ghostPage)
-	UI.createSectionHeader(card, "Developer Ghost Mode")
-	local gTog = UI.createToggle(card, "Noclip (Ghost Mode)", false)
-	gTog.MouseButton1Click:Connect(function() 
-		local active = Physics.toggleGhost() 
-		UI.showToast(screenGui, active and "👻 Ghost Mode Enabled" or "Ghost Mode Disabled", active and "warning" or "info") 
-	end)
-	createNote(card, "Allows passing through walls. Periodically disables character collision.")
-	UI.createButton(card, "Reset All Physics", "danger").MouseButton1Click:Connect(function() Physics.resetAll() UI.showToast(screenGui, "All Systems Reset", "info") end)
+    local info = Instance.new("TextLabel")
+    info.Size              = UDim2.new(0.96, 0, 0, 50)
+    info.BackgroundColor3  = C.Surface
+    info.BackgroundTransparency = 0.1
+    info.TextColor3        = C.TextSub
+    info.TextSize          = 10
+    info.Font              = Enum.Font.GothamMedium
+    info.Text              = "N/M/K: حفظ المناطق 1/2/3\nB/V/J: انتقل للمنطقة 1/2/3"
+    info.TextWrapped       = true
+    info.Parent            = P_CP
+    Corner(UDim.new(0,9), info)
+    Stroke(C.Accent,1,0.8,info)
 end
 
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+-- 3. صفحة الموسيقى
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+local P_Music = CreatePage()
+AddTab("🎵","موسيقى", P_Music)
+
+local Songs = {
+    {"أغنية 1","3017157406"},
+    {"أغنية 2","1843170826"},
+    {"أغنية 3","9126245770"},
+    {"أغنية 4","6698976160"},
+    {"أغنية 5","9032979010"},
+}
+
+MakeDivider(P_Music, "مكتبة الأغاني")
+for _, s in Songs do
+    MakeButton(P_Music, s[1], "🎤", C.Accent, function()
+        PlaySound(s[2])
+    end)
+end
+
+MakeDivider(P_Music, "أغنية مخصصة")
+local _, soundBox = MakeInput(P_Music, "أدخل ID الأغنية ثم اضغط Enter", function(t)
+    PlaySound(t)
+end)
+
+MakeDivider(P_Music, "الصوت")
+MakeSlider(P_Music, "مستوى الصوت", "🔊", 0, 100, 50, function(v)
+    SoundVol = v / 100
+    if CurrentSound then CurrentSound.Volume = SoundVol end
+end)
+MakeButton(P_Music, "إيقاف الموسيقى", "🔇", C.Red, StopSound)
+
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+-- 4. صفحة اللاعبين
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+local P_Players = CreatePage()
+AddTab("👥","لاعبين", P_Players)
+
+MakeDivider(P_Players, "بحث عن لاعب (أول 3 حروف كافية)")
+MakeInput(P_Players, "اكتب اسم اللاعب ثم Enter", function(t)
+    local p = FindPlayer(t)
+    if p then
+        CurrentTarget = p
+        Notify("✅ تم العثور", p.Name.." ("..p.DisplayName..")")
+    else
+        Notify("❌ خطأ", "لا يوجد لاعب باسم: "..t)
+    end
+end)
+
+MakeButton(P_Players, "تيليپورت للاعب المحدد", "🎯", C.Green, function()
+    if CurrentTarget then
+        TeleportToPlayer(CurrentTarget)
+    else
+        Notify("⚠️","ابحث عن لاعب أولاً")
+    end
+end)
+
+MakeDivider(P_Players, "قائمة اللاعبين")
+local refreshBtn = MakeButton(P_Players, "تحديث القائمة", "🔄", C.AccentDark, nil)
+local listFrame = Instance.new("Frame")
+listFrame.Size               = UDim2.new(0.96, 0, 0, 0)
+listFrame.AutomaticSize      = Enum.AutomaticSize.Y
+listFrame.BackgroundTransparency = 1
+listFrame.Parent             = P_Players
+
+local listLayout = Instance.new("UIListLayout")
+listLayout.Padding           = UDim.new(0, 4)
+listLayout.Parent            = listFrame
+
+local function RefreshList()
+    for _, c in listFrame:GetChildren() do
+        if not c:IsA("UIListLayout") then c:Destroy() end
+    end
+    for _, p in Players:GetPlayers() do
+        local row = Instance.new("TextButton")
+        row.Size             = UDim2.new(1, 0, 0, 32)
+        row.BackgroundColor3 = C.SurfaceAlt
+        row.BackgroundTransparency = 0.2
+        row.Text             = "👤 "..p.Name.." ("..p.DisplayName..")"
+        row.TextColor3       = C.Text
+        row.TextSize         = 11
+        row.Font             = Enum.Font.GothamMedium
+        row.TextXAlignment   = Enum.TextXAlignment.Left
+        row.Active           = true
+        row.Parent           = listFrame
+        Corner(UDim.new(0,8), row)
+
+        local pad = Instance.new("UIPadding")
+        pad.PaddingLeft = UDim.new(0,8)
+        pad.Parent      = row
+
+        row.MouseButton1Click:Connect(function()
+            CurrentTarget = p
+            Notify("✅ محدد", p.Name)
+            Tween(row, TI.Fast, {BackgroundColor3 = C.Accent, BackgroundTransparency = 0.2})
+            task.delay(0.5, function()
+                Tween(row, TI.Fast, {BackgroundColor3 = C.SurfaceAlt, BackgroundTransparency = 0.2})
+            end)
+        end)
+    end
+end
+RefreshList()
+refreshBtn.MouseButton1Click:Connect(RefreshList)
+
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+-- 5. صفحة الأمان والمعلومات
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+local P_Info = CreatePage()
+AddTab("ℹ️","معلومات", P_Info)
+
+MakeDivider(P_Info, "نظام الحماية")
+MakeButton(P_Info, "إعادة تفعيل الحماية", "🛡️", C.Yellow, AntiBan)
+
+MakeDivider(P_Info, "معلومات السكربت")
 do
-	local card = UI.createCard(checkPage)
-	UI.createSectionHeader(card, "Coordinate Checkpoints")
-	for i = 1, 3 do
-		local row = Instance.new("Frame", card) row.Size = UDim2.new(1, 0, 0, 38) row.BackgroundTransparency = 1
-		Instance.new("UIListLayout", row).FillDirection = Enum.FillDirection.Horizontal
-		Instance.new("UIListLayout", row).Padding = UDim.new(0, 8)
-		local l = Instance.new("TextLabel", row) l.Size = UDim2.new(0, 60, 1, 0) l.Text = "Slot " .. i l.TextColor3 = Theme.Colors.TextPrimary l.BackgroundTransparency = 1
-		local sBtn = UI.createButton(row, "Save", "primary") sBtn.Size = UDim2.new(0, 75, 1, -4)
-		sBtn.MouseButton1Click:Connect(function() Physics.saveCheckpoint(i) UI.showToast(screenGui, "Saved Slot " .. i, "success") end)
-		local lBtn = UI.createButton(row, "Load", "success") lBtn.Size = UDim2.new(0, 75, 1, -4)
-		lBtn.MouseButton1Click:Connect(function() if Physics.loadCheckpoint(i) then UI.showToast(screenGui, "Teleported", "success") else UI.showToast(screenGui, "No Data in Slot " .. i, "warning") end end)
-		local cBtn = UI.createButton(row, "Clear", "danger") cBtn.Size = UDim2.new(0, 65, 1, -4)
-		cBtn.MouseButton1Click:Connect(function() Physics.clearCheckpoint(i) UI.showToast(screenGui, "Slot " .. i .. " Cleared", "info") end)
-	end
+    local box = Instance.new("TextLabel")
+    box.Size               = UDim2.new(0.96, 0, 0, 130)
+    box.BackgroundColor3   = C.Surface
+    box.BackgroundTransparency = 0.1
+    box.TextColor3         = C.TextSub
+    box.TextSize           = 11
+    box.Font               = Enum.Font.GothamMedium
+    box.Text               = [[🔥 PRO X100 — Ultimate Edition
+
+✈ E     → طيران / إيقاف
+🧱 X     → اختراق الجدران
+📍 N/M/K → حفظ المناطق 1/2/3
+🌀 B/V/J → انتقل 1/2/3
+⚡ C/Z   → رفع/خفض سرعة الطيران
+📱 F5   → إخفاء/إظهار الواجهة]]
+    box.TextWrapped        = true
+    box.TextXAlignment     = Enum.TextXAlignment.Left
+    box.Parent             = P_Info
+    Corner(UDim.new(0,9), box)
+    Stroke(C.Accent, 1, 0.75, box)
+
+    local pad = Instance.new("UIPadding")
+    pad.PaddingAll = UDim.new(0,8)
+    pad.Parent     = box
 end
 
-do
-	local card = UI.createCard(targetPage)
-	UI.createSectionHeader(card, "Smart Tool Follow")
-	local pIn = UI.createInput(card, "Target Player Name")
-	local tIn = UI.createInput(card, "Tool Name (Partial)")
-	UI.createButton(card, "Start Following", "primary").MouseButton1Click:Connect(function() 
-		if pIn.Text == "" then UI.showToast(screenGui, "Please enter a player name", "warning") return end
-		Targeting.startToolFollow(pIn.Text, tIn.Text, function(m, s) UI.showToast(screenGui, m, s) end) 
-	end)
-	UI.createButton(card, "Stop Follow", "danger").MouseButton1Click:Connect(function() Targeting.stopToolFollow() UI.showToast(screenGui, "Follow Stopped", "info") end)
+-- ════════════════════════════════════════════
+--     تفعيل الصفحة الأولى وتأثير البداية
+-- ════════════════════════════════════════════
+SwitchPage(P_Fly, T_Fly)
+Tween(TI_Fly, TI.Fast, {TextColor3 = C.AccentGlow})
 
-	local teleCard = UI.createCard(targetPage)
-	UI.createSectionHeader(teleCard, "Instant Teleport")
-	local teleIn = UI.createInput(teleCard, "Player to Teleport To")
-	UI.createButton(teleCard, "Teleport Now", "success").MouseButton1Click:Connect(function() 
-		if teleIn.Text == "" then UI.showToast(screenGui, "Enter a player name", "warning") return end
-		local ok, msg = Targeting.teleportToPlayer(teleIn.Text, LocalPlayer) UI.showToast(screenGui, msg, ok and "success" or "danger") 
-	end)
+-- ════════════════════════════════════════════
+--           إشعار الترحيب
+-- ════════════════════════════════════════════
+task.delay(1, function()
+    Notify("🔥 PRO X100", "تم التحميل بنجاح ✅ | جميع الميزات جاهزة", 4)
+end)
 
-	local listCard = UI.createCard(targetPage)
-	UI.createSectionHeader(listCard, "Server Players")
-	
-	local searchIn = UI.createInput(listCard, "Filter Players...")
-	local listFrame = Instance.new("Frame", listCard) listFrame.Size = UDim2.new(1, 0, 0, 0) listFrame.AutomaticSize = Enum.AutomaticSize.Y listFrame.BackgroundTransparency = 1
-	Instance.new("UIListLayout", listFrame).Padding = UDim.new(0, 4)
-	
-	local function refreshList(filter)
-		for _, v in listFrame:GetChildren() do if not v:IsA("UIListLayout") then v:Destroy() end end
-		for _, info in Targeting.getPlayerList() do
-			local nameMatch = info.name:lower():find(filter:lower() or "", 1, true)
-			local dispMatch = info.displayName:lower():find(filter:lower() or "", 1, true)
-			if not filter or filter == "" or nameMatch or dispMatch then
-				local r = Instance.new("TextButton", listFrame)
-				r.Size = UDim2.new(1, 0, 0, 28) r.BackgroundColor3 = Theme.Colors.SurfaceAlt r.BackgroundTransparency = 0.5
-				r.Text = ("  %s  (@%s)"):format(info.displayName, info.name)
-				r.TextColor3 = Theme.Colors.TextPrimary r.TextSize = Theme.Size.SmallText r.Font = Theme.Font.Mono r.TextXAlignment = Enum.TextXAlignment.Left
-				Instance.new("UICorner", r).CornerRadius = UDim.new(0, 6)
-				r.MouseButton1Click:Connect(function()
-					teleIn.Text = info.name pIn.Text = info.name UI.showToast(screenGui, "Selected " .. info.name, "info") 
-				end)
-			end
-		end
-	end
-	
-	searchIn:GetPropertyChangedSignal("Text"):Connect(function() refreshList(searchIn.Text) end)
-	refreshList()
-	local conn1 = Players.PlayerAdded:Connect(function() refreshList(searchIn.Text) end)
-	local conn2 = Players.PlayerRemoving:Connect(function() refreshList(searchIn.Text) end)
-	
-	mainPanel.Destroying:Connect(function()
-		conn1:Disconnect() conn2:Disconnect()
-	end)
-end
-
--- Boundary-Aware Draggable Logic for Mobile
-local function initDraggable(frame)
-	local dragging, dragStart, startPos, moved = false, nil, nil, false
-	frame.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-			dragging = true moved = false dragStart = input.Position startPos = frame.Position
-		end
-	end)
-	UserInputService.InputChanged:Connect(function(input)
-		if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-			local delta = input.Position - dragStart
-			if delta.Magnitude > 5 then moved = true end
-			local targetX = startPos.X.Offset + delta.X
-			local targetY = startPos.Y.Offset + delta.Y
-			
-			-- Constrain to screen boundaries
-			local screen = workspace.CurrentCamera.ViewportSize
-			targetX = math.clamp(targetX, -screen.X/2 + frame.AbsoluteSize.X/2, screen.X/2 - frame.AbsoluteSize.X/2)
-			targetY = math.clamp(targetY, -screen.Y/2 + frame.AbsoluteSize.Y/2, screen.Y/2 - frame.AbsoluteSize.Y/2)
-			
-			frame.Position = UDim2.new(startPos.X.Scale, targetX, startPos.Y.Scale, targetY)
-		end
-	end)
-	UserInputService.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = false end end)
-end
-
-local panelVisible = false
-local function togglePanel()
-	panelVisible = not panelVisible
-	if panelVisible then
-		mainPanel.Visible = true 
-		cg.GroupTransparency = 1
-		mainPanel.Size = UDim2.new(0.3, 0, 0.3, 0)
-		TweenService:Create(mainPanel, TweenInfo.new(0.4, Enum.EasingStyle.Back), {Size = UDim2.new(0.85, 0, 0.85, 0)}):Play()
-		TweenService:Create(cg, TweenInfo.new(0.4), {GroupTransparency = 0}):Play()
-	else
-		local t = TweenService:Create(mainPanel, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Size = UDim2.new(0.1, 0, 0.1, 0)})
-		TweenService:Create(cg, TweenInfo.new(0.3), {GroupTransparency = 1}):Play()
-		t:Play()
-		t.Completed:Connect(function() mainPanel.Visible = false end)
-	end
-end
-
-initDraggable(mainPanel)
-UI.createFloatingIcon(screenGui, togglePanel)
-setActiveTab("move", tabButtons.move.btn, tabButtons.move.icon, tabButtons.move.lbl)
-
-local title = Instance.new("TextLabel", mainPanel)
-title.Size = UDim2.new(0, 220, 0, 30) title.Position = UDim2.new(0, 96, 0, 8)
-title.Text = "Advanced Admin Panel" title.TextColor3 = Theme.Colors.TextPrimary
-title.Font = Theme.Font.Title title.TextSize = Theme.Size.TitleText title.BackgroundTransparency = 1 title.TextXAlignment = Enum.TextXAlignment.Left title.ZIndex = 10
-
-local version = Instance.new("TextLabel", mainPanel)
-version.Size = UDim2.new(0, 150, 0, 30) version.Position = UDim2.new(0, 96, 0, 22)
-version.Text = "v2.5 • Final Pro Mobile" version.TextColor3 = Theme.Colors.TextMuted
-version.Font = Theme.Font.Mono version.TextSize = Theme.Size.SmallText version.BackgroundTransparency = 1 version.TextXAlignment = Enum.TextXAlignment.Left version.ZIndex = 10
-
-local closeBtn = Instance.new("TextButton", mainPanel)
-closeBtn.Size = UDim2.new(0, 32, 0, 32) closeBtn.Position = UDim2.new(1, -40, 0, 10)
-closeBtn.BackgroundColor3 = Theme.Colors.Danger closeBtn.Text = "✕" closeBtn.TextColor3 = Color3.new(1,1,1)
-closeBtn.Font = Theme.Font.Label closeBtn.TextSize = 15 closeBtn.ZIndex = 11
-Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 8)
-closeBtn.MouseButton1Click:Connect(togglePanel)
-
--- Move content to CanvasGroup for smooth fade animation
-for _, v in ipairs(mainPanel:GetChildren()) do 
-	if v ~= cg and not v:IsA("UISizeConstraint") then 
-		v.Parent = cg 
-	end 
-end
-
-LocalPlayer.CharacterAdded:Connect(function() task.wait(1) Physics.resetAll() updateGhostParts() end)
-print("[AdminPanel] Professional Mobile Version loaded successfully.")
+print([[
+╔══════════════════════════════════════════════════════╗
+║          🔥 PRO X100 — تم التحميل بنجاح ✅            ║
+╚══════════════════════════════════════════════════════╝
+]])
