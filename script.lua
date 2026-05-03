@@ -984,6 +984,50 @@ local function MakeBtn(parent, text, col, cb)
     return btn
 end
 
+local function MakeIconCard(parent, icon, label, col)
+    local card = Instance.new("TextButton")
+    card.Size = UDim2.new(0.97, 0, 0, 54)
+    card.BackgroundColor3 = C.Surface
+    card.BackgroundTransparency = 0.05
+    card.Text = ""
+    card.Active = true
+    card.Parent = parent
+    Corner(UDim.new(0, 14), card)
+    Stroke(col or C.A1, 1, 0.72, card)
+
+    local left = Instance.new("Frame")
+    left.Size = UDim2.new(0, 44, 0, 44)
+    left.Position = UDim2.new(0, 6, 0.5, -22)
+    left.BackgroundColor3 = col or C.A1
+    left.BackgroundTransparency = 0.15
+    left.BorderSizePixel = 0
+    left.Parent = card
+    Corner(UDim.new(0, 12), left)
+    GradV(Color3.fromRGB(130,160,255), Color3.fromRGB(70,90,220), left)
+
+    local ic = Instance.new("TextLabel")
+    ic.Size = UDim2.new(1, 0, 1, 0)
+    ic.BackgroundTransparency = 1
+    ic.Text = icon
+    ic.TextColor3 = C.White
+    ic.TextSize = 22
+    ic.Font = Enum.Font.GothamBold
+    ic.Parent = left
+
+    local txt = Instance.new("TextLabel")
+    txt.Size = UDim2.new(1, -62, 1, 0)
+    txt.Position = UDim2.new(0, 60, 0, 0)
+    txt.BackgroundTransparency = 1
+    txt.Text = label
+    txt.TextColor3 = C.Text
+    txt.TextSize = 12
+    txt.Font = Enum.Font.GothamSemibold
+    txt.TextXAlignment = Enum.TextXAlignment.Left
+    txt.Parent = card
+
+    return card
+end
+
 local function MakeGridButtons(parent, items)
     local grid = Instance.new("Frame")
     grid.Size = UDim2.new(0.97, 0, 0, 0)
@@ -1143,6 +1187,121 @@ local function MakeInfoBox(parent, text, h)
     return box
 end
 
+local function MakePageHeader(parent, title, sub)
+    local head = Instance.new("Frame")
+    head.Size = UDim2.new(0.97, 0, 0, 82)
+    head.BackgroundColor3 = C.Surface
+    head.BackgroundTransparency = 0.03
+    head.Parent = parent
+    Corner(UDim.new(0, 14), head)
+    Stroke(C.A1, 1, 0.78, head)
+
+    local titleLbl = Instance.new("TextLabel")
+    titleLbl.Size = UDim2.new(1, -20, 0, 24)
+    titleLbl.Position = UDim2.new(0, 10, 0, 10)
+    titleLbl.BackgroundTransparency = 1
+    titleLbl.Text = title
+    titleLbl.TextColor3 = C.White
+    titleLbl.TextSize = 16
+    titleLbl.Font = Enum.Font.GothamBold
+    titleLbl.TextXAlignment = Enum.TextXAlignment.Left
+    titleLbl.Parent = head
+
+    local subLbl = Instance.new("TextLabel")
+    subLbl.Size = UDim2.new(1, -20, 0, 18)
+    subLbl.Position = UDim2.new(0, 10, 0, 36)
+    subLbl.BackgroundTransparency = 1
+    subLbl.Text = sub
+    subLbl.TextColor3 = C.TextSub
+    subLbl.TextSize = 11
+    subLbl.Font = Enum.Font.GothamMedium
+    subLbl.TextXAlignment = Enum.TextXAlignment.Left
+    subLbl.Parent = head
+
+    return head
+end
+
+local function InsertPageStyle(page)
+    local pad = Instance.new("UIPadding")
+    pad.PaddingTop = UDim.new(0, 8)
+    pad.PaddingBottom = UDim.new(0, 8)
+    pad.PaddingLeft = UDim.new(0, 2)
+    pad.PaddingRight = UDim.new(0, 2)
+    pad.Parent = page
+end
+
+local function MakeHeroCard(parent)
+    local card = Instance.new("Frame")
+    card.Size = UDim2.new(0.97, 0, 0, 150)
+    card.BackgroundColor3 = C.Surface
+    card.BackgroundTransparency = 0.05
+    card.BorderSizePixel = 0
+    card.Parent = parent
+    Corner(UDim.new(0, 16), card)
+    Stroke(C.A1, 1, 0.78, card)
+    GradV(Color3.fromRGB(18, 18, 38), Color3.fromRGB(9, 10, 24), card)
+
+    local shadow = Instance.new("Frame")
+    shadow.Size = UDim2.new(1, 0, 1, 0)
+    shadow.BackgroundTransparency = 1
+    shadow.Parent = card
+
+    local avatar = Instance.new("ImageLabel")
+    avatar.Size = UDim2.new(0, 78, 0, 78)
+    avatar.Position = UDim2.new(0, 14, 0, 36)
+    avatar.BackgroundTransparency = 1
+    avatar.Image = ""
+    avatar.Parent = card
+    Corner(UDim.new(1, 0), avatar)
+    Stroke(C.A2, 2, 0.35, avatar)
+
+    task.spawn(function()
+        local ok, content = pcall(function()
+            return Players:GetUserThumbnailAsync(LP.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size180x180)
+        end)
+        if ok and content then
+            avatar.Image = content
+        end
+    end)
+
+    local greet = Instance.new("TextLabel")
+    greet.Size = UDim2.new(1, -110, 0, 32)
+    greet.Position = UDim2.new(0, 102, 0, 34)
+    greet.BackgroundTransparency = 1
+    greet.Text = "مرحبا بك " .. LP.Name
+    greet.TextColor3 = C.White
+    greet.TextSize = 18
+    greet.Font = Enum.Font.GothamBold
+    greet.TextXAlignment = Enum.TextXAlignment.Left
+    greet.Parent = card
+
+    local welcome = Instance.new("TextLabel")
+    welcome.Size = UDim2.new(1, -110, 0, 56)
+    welcome.Position = UDim2.new(0, 102, 0, 66)
+    welcome.BackgroundTransparency = 1
+    welcome.TextWrapped = true
+    welcome.Text = "اهلا بك الى ثائر ادمن يمكنك اضافتي على صفحه الانستجرام لتحديثات او تحسينات المقترحه (t2h0a)"
+    welcome.TextColor3 = C.TextSub
+    welcome.TextSize = 11
+    welcome.Font = Enum.Font.GothamMedium
+    welcome.TextXAlignment = Enum.TextXAlignment.Left
+    welcome.TextYAlignment = Enum.TextYAlignment.Top
+    welcome.Parent = card
+
+    task.spawn(function()
+        card.BackgroundTransparency = 1
+        avatar.ImageTransparency = 1
+        greet.TextTransparency = 1
+        welcome.TextTransparency = 1
+        Tween(card, TI.Med, {BackgroundTransparency = 0.05})
+        Tween(avatar, TI.Slow, {ImageTransparency = 0})
+        Tween(greet, TI.Med, {TextTransparency = 0})
+        Tween(welcome, TI.Med, {TextTransparency = 0})
+    end)
+
+    return card
+end
+
 -- ════════════════════════════════════════════════════════
 --                     الصفحات
 -- ════════════════════════════════════════════════════════
@@ -1150,6 +1309,11 @@ end
 -- ── 1. صفحة الطيران والحركة ──────────────────────────
 local P1 = CreatePage()
 local B1,I1,L1 = AddTab("✈️","طيران",P1)
+InsertPageStyle(P1)
+MakePageHeader(P1, "THAER X100", "التحكم الكامل بالطيران والجدران والحركة")
+MakeHeroCard(P1)
+MakeSectionLabel(P1, "  ─── الصفحة الرئيسية")
+MakeInfoBox(P1, "اهلا بك الى ثائر ادمن يمكنك اضافتي على صفحه الانستجرام لتحديثات او تحسينات المقترحه (t2h0a)", 52)
 
 MakeSectionLabel(P1, "  ─── الطيران وضع الشبح")
 MakeToggle(P1, "✈️  تفعيل الطيران الحر", C.A2, function(v) if v then StartFly() else StopFly() end end)
@@ -1164,6 +1328,8 @@ MakeInfoBox(P1,"E: طيران/إيقاف  |  X: جدران\nShift: تسريع  |
 -- ── 2. صفحة المناطق ──────────────────────────────────
 local P2 = CreatePage()
 AddTab("📍","مناطق",P2)
+InsertPageStyle(P2)
+MakePageHeader(P2, "المناطق", "احفظ وانتقل بسرعة بين 3 مواقع")
 
 for i=1,3 do
     MakeSectionLabel(P2, "  ─── المنطقة "..i)
@@ -1184,6 +1350,8 @@ MakeInfoBox(P2,"N/M/K → حفظ المناطق 1/2/3\nB/V/J → انتقل لل
 -- ── 3. صفحة الموسيقى ─────────────────────────────────
 local P3 = CreatePage()
 AddTab("🎵","موسيقى",P3)
+InsertPageStyle(P3)
+MakePageHeader(P3, "الموسيقى", "تشغيل وتحكم بصوت نظيف وفخم")
 
 local Songs={{"أغنية 1","3017157406"},{"أغنية 2","1843170826"},{"أغنية 3","9126245770"},{"أغنية 4","6698976160"},{"أغنية 5","9032979010"}}
 MakeSectionLabel(P3,"  ─── مكتبة الأغاني")
@@ -1199,6 +1367,8 @@ MakeBtn(P3,"🔇  إيقاف الموسيقى",C.Red,StopSound)
 -- ── 4. صفحة اللاعبين ─────────────────────────────────
 local P4 = CreatePage()
 AddTab("👥","لاعبين",P4)
+InsertPageStyle(P4)
+MakePageHeader(P4, "اللاعبين", "تحديد، متابعة، مشاهدة، ورمي")
 
 MakeSectionLabel(P4,"  ─── بحث عن لاعب (أول 3 حروف كافية)")
 MakeInput(P4,"اكتب اسم اللاعب ثم Enter…",function(t)
@@ -1250,6 +1420,8 @@ MakeBtn(P4,"🔄  تحديث القائمة",C.A1,RefreshList)
 -- ── 5. صفحة ESP و Aimbot ─────────────────────────────
 local P5 = CreatePage()
 AddTab("👁️","ESP",P5)
+InsertPageStyle(P5)
+MakePageHeader(P5, "ESP و Aimbot", "رؤية اللاعبين وقفل الكاميرا")
 
 MakeSectionLabel(P5,"  ─── رؤية اللاعبين (ESP)")
 MakeToggle(P5,"👁️  تفعيل ESP — رؤية عبر الجدران",C.Cyan,function(v) ToggleESP(v) end)
@@ -1264,6 +1436,8 @@ MakeInfoBox(P5,"ESP: يعرض اسم اللاعب ومسافته فوق رأسه
 -- ── 6. صفحة الأمان والإعدادات ──────────────────────────
 local P6 = CreatePage()
 AddTab("🛡️","أمان",P6)
+InsertPageStyle(P6)
+MakePageHeader(P6, "الأمان والإعدادات", "حفظ الإعدادات والحماية")
 
 MakeSectionLabel(P6,"  ─── نظام الحماية")
 MakeBtn(P6,"🛡️  إعادة تفعيل الحماية",C.Yellow,AntiBan)
