@@ -298,6 +298,9 @@ local function StopFly()
 	local h = GetHumanoid()
 	if h then
 		pcall(function() h.PlatformStand = false end)
+		-- دفع بسيط للأسفل للتأكد من استجابة الفيزياء فوراً
+		local hrp = GetHRP()
+		if hrp then hrp.Velocity = Vector3.new(0, -1, 0) end
 	end
 end
 
@@ -368,23 +371,24 @@ local function StartFly()
 		local cf  = cam.CFrame
 
 		local dir = Vector3.zero
-
+		
+		-- حساب الاتجاه بناءً على نظر الكاميرا (3D Movement)
 		if UserInputService:IsKeyDown(Enum.KeyCode.W) then
-			dir = dir + Vector3.new(cf.LookVector.X, 0, cf.LookVector.Z).Unit
+			dir = dir + cf.LookVector
 		end
 		if UserInputService:IsKeyDown(Enum.KeyCode.S) then
-			dir = dir - Vector3.new(cf.LookVector.X, 0, cf.LookVector.Z).Unit
+			dir = dir - cf.LookVector
 		end
 		if UserInputService:IsKeyDown(Enum.KeyCode.A) then
-			dir = dir - Vector3.new(cf.RightVector.X, 0, cf.RightVector.Z).Unit
+			dir = dir - cf.RightVector
 		end
 		if UserInputService:IsKeyDown(Enum.KeyCode.D) then
-			dir = dir + Vector3.new(cf.RightVector.X, 0, cf.RightVector.Z).Unit
+			dir = dir + cf.RightVector
 		end
-		if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+		if UserInputService:IsKeyDown(Enum.KeyCode.Space) then -- صعود يدوي
 			dir = dir + Vector3.new(0, 1, 0)
 		end
-		if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
+		if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then -- نزول يدوي
 			dir = dir - Vector3.new(0, 1, 0)
 		end
 
