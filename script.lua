@@ -61,8 +61,6 @@ local Lang = {
 		SpectatePlayer = "🎥  Spectate Player",
 		StopFollowSpec = "⏹  Stop Follow / Spectate",
 		PlayerList     = "Player List",
-		KillTarget     = "💀  Kill Target",
-		BringAll       = "🌪️  Bring All Players",
 		-- ESP page
 		ESPTitle       = "ESP / Overlay",
 		ESPSub         = "Admin visibility tools",
@@ -77,8 +75,6 @@ local Lang = {
 		-- External scripts page
 		Scripts        = "Scripts",
 		Animations     = "💃 Animations",
-		Cryptic        = "🔐 Cryptic Hub",
-		BTools         = "🛠️  F3X Building Tools",
 		-- Settings page
 		SettingsTitle  = "Settings",
 		SettingsSub    = "Admin panel configuration",
@@ -136,8 +132,6 @@ local Lang = {
 		SpectatePlayer = "🎥  مشاهدة اللاعب",
 		StopFollowSpec = "⏹  إيقاف التتبع / المشاهدة",
 		PlayerList     = "قائمة اللاعبين",
-		KillTarget     = "💀  قتل المستهدف",
-		BringAll       = "🌪️  سحب جميع اللاعبين",
 		-- ESP page
 		ESPTitle       = "الرادار / التراكب",
 		ESPSub         = "أدوات الرؤية للمشرف",
@@ -152,8 +146,6 @@ local Lang = {
 		-- External scripts page
 		Scripts        = "Scripts",
 		Animations     = "💃 Animations",
-		Cryptic        = "🔐 Cryptic Hub",
-		BTools         = "🛠️  أدوات البناء F3X",
 		-- Settings page
 		SettingsTitle  = "الإعدادات",
 		SettingsSub    = "إعدادات لوحة الإدارة",
@@ -547,28 +539,6 @@ local function StartSpectate(target)
 			Camera.CameraSubject = th
 		end
 	end)
-end
-
-local function KillPlayer(target)
-	local tc = target.Character
-	local th = tc and tc:FindFirstChildOfClass("Humanoid")
-	if th then
-		th.Health = 0
-	end
-end
-
-local function BringAllPlayers()
-	local hrp = GetHRP()
-	if not hrp then return end
-	for _, p in pairs(Players:GetPlayers()) do
-		if p ~= LocalPlayer then
-			local tc = p.Character
-			local thrp = tc and tc:FindFirstChild("HumanoidRootPart")
-			if thrp then
-				thrp.CFrame = hrp.CFrame + hrp.CFrame.LookVector * 3
-			end
-		end
-	end
 end
 
 -- ============================================================
@@ -1760,16 +1730,7 @@ end)
 
 local extSec1, extSec1L = MakeSectionLabel(PageExternalScripts, T("Scripts"), 1)
 
-local crypticBtn = MakeButton(PageExternalScripts, "Cryptic", C.AccentB, 2, function()
-	task.spawn(function()
-		local ok, err = pcall(function()
-			loadstring(game:HttpGet("https://raw.githubusercontent.com/OnlyCryptic/Cryptic/main/main.lua"))()
-		end)
-		if not ok then warn("[THAER X100] Cryptic script failed: " .. tostring(err)) end
-	end)
-end)
-
-local animationsBtn = MakeButton(PageExternalScripts, "Animations", C.Accent, 3, function()
+local animationsBtn = MakeButton(PageExternalScripts, "Animations", C.Accent, 2, function()
 	task.spawn(function()
 		local ok, err = pcall(function()
 			local src = ""
@@ -1795,15 +1756,6 @@ local animationsBtn = MakeButton(PageExternalScripts, "Animations", C.Accent, 3,
 		if not ok then
 			warn("[THAER X100] Animations script failed: " .. tostring(err))
 		end
-	end)
-end)
-
-local btoolsBtn = MakeButton(PageExternalScripts, "BTools", Color3.fromRGB(200, 160, 40), 4, function()
-	task.spawn(function()
-		local ok, err = pcall(function()
-			loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()
-		end)
-		if not ok then warn("[THAER X100] BTools (Infinite Yield) failed: " .. tostring(err)) end
 	end)
 end)
 
@@ -1910,11 +1862,8 @@ local function ApplyLanguage()
 	tpBtn.Text             = T("TeleportTo")
 	flwBtn.Text            = T("FollowPlayer")
 	spcBtn.Text            = T("SpectatePlayer")
-	killBtn.Text           = T("KillTarget")
 	stopBtn.Text           = T("StopFollowSpec")
-	plSecExtraL.Text       = "▸  " .. T("General"):upper()
-	bringAllBtn.Text       = T("BringAll")
-	
+
 	-- ESP page
 	espHeaderT.Text        = T("ESPTitle")
 	espHeaderT.TextXAlignment = align
@@ -1934,8 +1883,6 @@ local function ApplyLanguage()
 	-- External scripts page
 	extSec1L.Text          = "▸  " .. T("Scripts"):upper()
 	animationsBtn.Text     = T("Animations")
-	crypticBtn.Text        = T("Cryptic")
-	btoolsBtn.Text         = T("BTools")
 
 	-- Settings page
 	setHeaderT.Text        = T("SettingsTitle")
