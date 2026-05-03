@@ -984,6 +984,27 @@ local function MakeBtn(parent, text, col, cb)
     return btn
 end
 
+local function MakeGridButtons(parent, items)
+    local grid = Instance.new("Frame")
+    grid.Size = UDim2.new(0.97, 0, 0, 0)
+    grid.AutomaticSize = Enum.AutomaticSize.Y
+    grid.BackgroundTransparency = 1
+    grid.Parent = parent
+
+    local layout = Instance.new("UIGridLayout")
+    layout.CellSize = UDim2.new(0.48, 0, 0, 36)
+    layout.CellPadding = UDim2.new(0, 6, 0, 6)
+    layout.FillDirectionMaxCells = 2
+    layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    layout.Parent = grid
+
+    for _, item in ipairs(items) do
+        MakeBtn(grid, item.text, item.col, item.cb)
+    end
+
+    return grid
+end
+
 local function MakeToggle(parent, text, col, cb)
     col = col or C.Green
     local on=false
@@ -1187,11 +1208,19 @@ MakeInput(P4,"اكتب اسم اللاعب ثم Enter…",function(t)
 end)
 
 MakeSectionLabel(P4,"  ─── أدوات اللاعب المحدد")
-MakeBtn(P4,"🎯  تيليپورت للاعب",C.Green,function() if CurrentTarget then TeleToPlayer(CurrentTarget) else Notify("⚠️","اختر لاعب أولاً") end end)
-MakeToggle(P4,"💫  متابعة اللاعب (Follow)",C.Cyan,function(v) Following=v; if v and not CurrentTarget then Notify("⚠️","اختر لاعب أولاً") end end)
-MakeBtn(P4,"👁️  مشاهدة (Spectate)",C.A3,function() if CurrentTarget then Spectate(CurrentTarget) else Notify("⚠️","اختر لاعب أولاً") end end)
-MakeBtn(P4,"👁️  إيقاف المشاهدة",C.TextMuted,StopSpectate)
-MakeBtn(P4,"💥  رمي اللاعب (Fling)",C.Red,function() if CurrentTarget then Fling(CurrentTarget) else Notify("⚠️","اختر لاعب أولاً") end end)
+MakeGridButtons(P4, {
+    {text="🎯  تيليپورت للاعب", col=C.Green, cb=function() if CurrentTarget then TeleToPlayer(CurrentTarget) else Notify("⚠️","اختر لاعب أولاً") end end},
+    {text="💫  متابعة اللاعب", col=C.Cyan, cb=function() Following = not Following; if Following and not CurrentTarget then Notify("⚠️","اختر لاعب أولاً") end end},
+    {text="👁️  مشاهدة", col=C.A3, cb=function() if CurrentTarget then Spectate(CurrentTarget) else Notify("⚠️","اختر لاعب أولاً") end end},
+    {text="⛔  إيقاف المشاهدة", col=C.TextMuted, cb=StopSpectate},
+    {text="💥  رمي اللاعب", col=C.Red, cb=function() if CurrentTarget then Fling(CurrentTarget) else Notify("⚠️","اختر لاعب أولاً") end end},
+})
+MakeBtn(P4,"👁️  إظهار كل التبويبات",C.A1,function()
+    for _, p in ipairs(AllPages) do
+        p.Visible = true
+    end
+    Notify("✅ تم","تم إظهار كل التبويبات")
+end)
 
 MakeSectionLabel(P4,"  ─── قائمة اللاعبين (اضغط لتحديد)")
 local listFrame=Instance.new("Frame"); listFrame.Size=UDim2.new(0.97,0,0,0); listFrame.AutomaticSize=Enum.AutomaticSize.Y
@@ -1225,6 +1254,10 @@ AddTab("👁️","ESP",P5)
 MakeSectionLabel(P5,"  ─── رؤية اللاعبين (ESP)")
 MakeToggle(P5,"👁️  تفعيل ESP — رؤية عبر الجدران",C.Cyan,function(v) ToggleESP(v) end)
 MakeToggle(P5,"🎯  Aimbot — قفل الكاميرا على الأقرب",C.Red,function(v) Aimbot_On=v; Notify("🎯 Aimbot",v and "مفعّل" or "إيقاف") end)
+MakeToggle(P5,"👤  Follow Player",C.Green,function(v) Following=v end)
+MakeBtn(P5,"👁️  Spectate Target",C.A3,function() if CurrentTarget then Spectate(CurrentTarget) else Notify("⚠️","اختر لاعب أولاً") end end)
+MakeBtn(P5,"⛔  Stop Spectate",C.TextMuted,StopSpectate)
+MakeBtn(P5,"💥  Fling Target",C.Red,function() if CurrentTarget then Fling(CurrentTarget) else Notify("⚠️","اختر لاعب أولاً") end end)
 MakeSectionLabel(P5,"  ─── معلومات")
 MakeInfoBox(P5,"ESP: يعرض اسم اللاعب ومسافته فوق رأسه عبر الجدران.\n\nAimbot: يقفل الكاميرا على أقرب لاعب تلقائياً.",55)
 
@@ -1236,6 +1269,13 @@ MakeSectionLabel(P6,"  ─── نظام الحماية")
 MakeBtn(P6,"🛡️  إعادة تفعيل الحماية",C.Yellow,AntiBan)
 MakeBtn(P6,"💾  حفظ الإعدادات",C.Green,function() SaveSettings(); Notify("💾 تم","الإعدادات محفوظة ✅") end)
 MakeBtn(P6,"🔄  إعادة تطبيق السرعة والقفز",C.A1,function() SetWalk(WalkSpd); SetJump(JumpPow); Notify("✅ تم","تطبيق القيم") end)
+MakeBtn(P6,"✨  إظهار/إخفاء الواجهة",C.Cyan,function()
+    if UIHidden then ShowPanel() else HidePanel() end
+end)
+MakeBtn(P6,"👁️  إظهار كل التبويبات",C.Cyan,function()
+    for _, p in ipairs(AllPages) do p.Visible = true end
+    Notify("✅ تم","تم إظهار كل الصفحات")
+end)
 
 MakeSectionLabel(P6,"  ─── معلومات السكربت")
 MakeInfoBox(P6,[[🔥 THAER X100 — Ultimate Edition v3.0
