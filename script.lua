@@ -928,8 +928,14 @@ local function CreatePage()
     return sf
 end
 
+local function HideAllPages()
+    for _, p in ipairs(AllPages) do
+        p.Visible = false
+    end
+end
+
 local function SwitchPage(page, btn, ico, lbl)
-    for _, p in AllPages do p.Visible=false end
+    HideAllPages()
     for _, t in AllTabs do
         t.btn.BackgroundColor3=C.SurfaceAlt; t.btn.BackgroundTransparency=0.3
         Tween(t.ico, TI.Fast, {TextColor3=C.TextMuted})
@@ -1171,7 +1177,7 @@ end
 
 local function MakeSectionLabel(parent, text)
     local wrap=Instance.new("Frame")
-    wrap.Size=UDim2.new(0.97,0,0,28)
+    wrap.Size=UDim2.new(0.97,0,0,24)
     wrap.BackgroundTransparency=1
     wrap.Parent=parent
 
@@ -1185,11 +1191,6 @@ local function MakeSectionLabel(parent, text)
     lbl.TextColor3=C.TextMuted; lbl.TextSize=9; lbl.Font=Enum.Font.GothamBold
     lbl.TextXAlignment=Enum.TextXAlignment.Left; lbl.Parent=wrap
 
-    local bottom=Instance.new("Frame")
-    bottom.Size=UDim2.new(1,0,0,4)
-    bottom.Position=UDim2.new(0,0,0,24)
-    bottom.BackgroundTransparency=1
-    bottom.Parent=wrap
     return wrap
 end
 
@@ -1290,7 +1291,7 @@ local function MakeHeroCard(parent)
 
     local greet = Instance.new("TextLabel")
     greet.Size = UDim2.new(1, -118, 0, 24)
-    greet.Position = UDim2.new(0, 108, 0, 28)
+    greet.Position = UDim2.new(0, 108, 0, 24)
     greet.BackgroundTransparency = 1
     greet.Text = "مرحبا بك " .. LP.Name
     greet.TextColor3 = C.White
@@ -1300,8 +1301,8 @@ local function MakeHeroCard(parent)
     greet.Parent = card
 
     local welcome = Instance.new("TextLabel")
-    welcome.Size = UDim2.new(1, -118, 0, 42)
-    welcome.Position = UDim2.new(0, 108, 0, 54)
+    welcome.Size = UDim2.new(1, -118, 0, 44)
+    welcome.Position = UDim2.new(0, 108, 0, 50)
     welcome.BackgroundTransparency = 1
     welcome.TextWrapped = true
     welcome.Text = "اهلا بك الى ثائر ادمن يمكنك اضافتي على صفحه الانستجرام لتحديثات او تحسينات المقترحه (t2h0a)"
