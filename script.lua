@@ -368,18 +368,17 @@ local function StartFly()
 			hrp.Anchored = false
 		end
 
-		-- تطبيق حالة السباحة لضمان الحركة الانسيابية وصوت الطيران
-		if currentHum:GetState() ~= Enum.HumanoidStateType.Swimming then
-			currentHum:ChangeState(Enum.HumanoidStateType.Swimming)
-		end
-		-- تعطيل PlatformStand لأنه قد يعيق حركة السباحة الفيزيائية
-		currentHum.PlatformStand = false
-
 		-- Check physics objects still exist
 		if not hrp or not hrp.Parent or not bv or not bv.Parent or not bg or not bg.Parent then
 			StopFly()
 			return
 		end
+
+		-- تطبيق حالة السباحة باستمرار لضمان الحركة ومنع التعليق
+		if currentHum:GetState() ~= Enum.HumanoidStateType.Swimming then
+			currentHum:ChangeState(Enum.HumanoidStateType.Swimming)
+		end
+		currentHum.PlatformStand = false
 
 		local speed = Config.FlySpeed
 		local shift = UserInputService:IsKeyDown(Enum.KeyCode.LeftShift)
@@ -1661,12 +1660,12 @@ local bringAllBtn = MakeButton(PagePlayers, "BringAll", C.AccentB, 10, function(
 end)
 
 
-local plSec2, plSec2L = MakeSectionLabel(PagePlayers, T("PlayerList"), 11)
+local plSec2, plSec2L = MakeSectionLabel(PagePlayers, T("PlayerList"), 12)
 
 local playerListFrame = Instance.new("Frame")
 playerListFrame.Size          = UDim2.new(0.97, 0, 0, 100)
 playerListFrame.BackgroundColor3 = C.Card
-playerListFrame.LayoutOrder   = 9
+playerListFrame.LayoutOrder   = 13
 playerListFrame.Parent        = PagePlayers
 AddCorner(playerListFrame, 7)
 AddStroke(playerListFrame, C.Accent, 1)
@@ -1954,6 +1953,9 @@ local function ApplyLanguage()
 	langBtn.Text           = T("LangToggle")
 	versionLbl.Text        = T("Version")
 end
+
+-- تشغيل الترجمة فوراً عند التحميل
+ApplyLanguage()
 
 -- Language toggle button callback
 langBtn.MouseButton1Click:Connect(function()
