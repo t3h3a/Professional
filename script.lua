@@ -30,6 +30,7 @@ local Lang = {
 		Checkpoints  = "Checkpoints",
 		Players      = "Players",
 		ESP          = "ESP",
+		ExternalScripts = "External Scripts",
 		Settings     = "Settings",
 		-- Home page
 		WelcomeMsg   = "Welcome to THAER X100 Admin Panel.\nUse the sidebar to navigate between tools.",
@@ -71,6 +72,9 @@ local Lang = {
 		Volume         = "Volume",
 		PlayMusic      = "▶  Play Music",
 		StopMusic      = "⏹  Stop Music",
+		-- External scripts page
+		Scripts        = "Scripts",
+		Animations     = "💃 Animations",
 		-- Settings page
 		SettingsTitle  = "Settings",
 		SettingsSub    = "Admin panel configuration",
@@ -97,6 +101,7 @@ local Lang = {
 		Checkpoints  = "نقاط الحفظ",
 		Players      = "اللاعبين",
 		ESP          = "الرادار",
+		ExternalScripts = "External Scripts",
 		Settings     = "الإعدادات",
 		-- Home page
 		WelcomeMsg   = "مرحباً في لوحة إدارة THAER X100.\nاستخدم الشريط الجانبي للتنقل بين الأدوات.",
@@ -138,6 +143,9 @@ local Lang = {
 		Volume         = "الصوت",
 		PlayMusic      = "▶  تشغيل الموسيقى",
 		StopMusic      = "⏹  إيقاف الموسيقى",
+		-- External scripts page
+		Scripts        = "Scripts",
+		Animations     = "💃 Animations",
 		-- Settings page
 		SettingsTitle  = "الإعدادات",
 		SettingsSub    = "إعدادات لوحة الإدارة",
@@ -1311,6 +1319,7 @@ local PageMovement    = MakePage("Movement")
 local PageCheckpoints = MakePage("Checkpoints")
 local PagePlayers     = MakePage("Players")
 local PageESP         = MakePage("ESP")
+local PageExternalScripts = MakePage("ExternalScripts")
 local PageSettings    = MakePage("Settings")
 
 -- ============================================================
@@ -1323,6 +1332,7 @@ local navDefs = {
 	{icon = "📍", labelKey = "Checkpoints", page = "Checkpoints"},
 	{icon = "👥", labelKey = "Players",     page = "Players"},
 	{icon = "👁",  labelKey = "ESP",         page = "ESP"},
+	{icon = "📜", labelKey = "ExternalScripts", page = "ExternalScripts"},
 	{icon = "⚙️",  labelKey = "Settings",    page = "Settings"},
 }
 
@@ -1695,6 +1705,41 @@ local stopMusicBtn = MakeButton(PageESP, "StopMusic", C.Danger, 9, function()
 end)
 
 -- ============================================================
+-- PAGE: EXTERNAL SCRIPTS
+-- ============================================================
+
+local extSec1, extSec1L = MakeSectionLabel(PageExternalScripts, T("Scripts"), 1)
+
+local animationsBtn = MakeButton(PageExternalScripts, "Animations", C.Accent, 2, function()
+	task.spawn(function()
+		local ok, err = pcall(function()
+			local src = ""
+			local CoreGui = game:GetService("StarterGui")
+
+			pcall(function()
+			src = game:HttpGet("https://yarhm.com/scr?channel=afemmax", false)
+			end)
+
+			if src == "" then
+			CoreGui:SetCore("SendNotification", {
+			Title = "YARHM Outage";
+			Text = "YARHM Online is currently unavailable! Using backup.";
+			Duration = 5;
+			})
+
+			src = game:HttpGet("https://raw.githubusercontent.com/Joystickplays/AFEM/refs/heads/main/max/afemmax.lua", false)
+			end
+
+			loadstring(src)()
+		end)
+
+		if not ok then
+			warn("[THAER X100] Animations script failed: " .. tostring(err))
+		end
+	end)
+end)
+
+-- ============================================================
 -- PAGE: SETTINGS
 -- ============================================================
 
@@ -1814,6 +1859,10 @@ local function ApplyLanguage()
 	if volSliderLbl  then volSliderLbl.Text  = T("Volume")  ; volSliderLbl.TextXAlignment  = align end
 	playMusicBtn.Text      = T("PlayMusic")
 	stopMusicBtn.Text      = T("StopMusic")
+
+	-- External scripts page
+	extSec1L.Text          = "▸  " .. T("Scripts"):upper()
+	animationsBtn.Text     = T("Animations")
 
 	-- Settings page
 	setHeaderT.Text        = T("SettingsTitle")
