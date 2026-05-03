@@ -1334,11 +1334,6 @@ end
 local P1 = CreatePage()
 local B1,I1,L1 = AddTab("✈️","طيران",P1)
 InsertPageStyle(P1)
-local p1list = Instance.new("UIListLayout")
-p1list.Padding = UDim.new(0, 8)
-p1list.HorizontalAlignment = Enum.HorizontalAlignment.Center
-p1list.SortOrder = Enum.SortOrder.LayoutOrder
-p1list.Parent = P1
 MakePageHeader(P1, "THAER X100", "التحكم الكامل بالطيران والجدران والحركة")
 MakeHeroCard(P1)
 MakeSpacer(P1, 6)
@@ -1362,11 +1357,6 @@ MakeInfoBox(P1,"E: طيران/إيقاف  |  X: جدران\nShift: تسريع  |
 local P2 = CreatePage()
 AddTab("📍","مناطق",P2)
 InsertPageStyle(P2)
-local p2list = Instance.new("UIListLayout")
-p2list.Padding = UDim.new(0, 8)
-p2list.HorizontalAlignment = Enum.HorizontalAlignment.Center
-p2list.SortOrder = Enum.SortOrder.LayoutOrder
-p2list.Parent = P2
 MakePageHeader(P2, "المناطق", "احفظ وانتقل بسرعة بين 3 مواقع")
 
 for i=1,3 do
@@ -1391,11 +1381,6 @@ MakeInfoBox(P2,"N/M/K → حفظ المناطق 1/2/3\nB/V/J → انتقل لل
 local P3 = CreatePage()
 AddTab("🎵","موسيقى",P3)
 InsertPageStyle(P3)
-local p3list = Instance.new("UIListLayout")
-p3list.Padding = UDim.new(0, 8)
-p3list.HorizontalAlignment = Enum.HorizontalAlignment.Center
-p3list.SortOrder = Enum.SortOrder.LayoutOrder
-p3list.Parent = P3
 MakePageHeader(P3, "الموسيقى", "تشغيل وتحكم بصوت نظيف وفخم")
 
 local Songs={{"أغنية 1","3017157406"},{"أغنية 2","1843170826"},{"أغنية 3","9126245770"},{"أغنية 4","6698976160"},{"أغنية 5","9032979010"}}
@@ -1416,11 +1401,6 @@ MakeBtn(P3,"🔇  إيقاف الموسيقى",C.Red,StopSound)
 local P4 = CreatePage()
 AddTab("👥","لاعبين",P4)
 InsertPageStyle(P4)
-local p4list = Instance.new("UIListLayout")
-p4list.Padding = UDim.new(0, 8)
-p4list.HorizontalAlignment = Enum.HorizontalAlignment.Center
-p4list.SortOrder = Enum.SortOrder.LayoutOrder
-p4list.Parent = P4
 MakePageHeader(P4, "اللاعبين", "تحديد، متابعة، مشاهدة، ورمي")
 
 MakeSpacer(P4, 6)
@@ -1477,11 +1457,6 @@ MakeBtn(P4,"🔄  تحديث القائمة",C.A1,RefreshList)
 local P5 = CreatePage()
 AddTab("👁️","ESP",P5)
 InsertPageStyle(P5)
-local p5list = Instance.new("UIListLayout")
-p5list.Padding = UDim.new(0, 8)
-p5list.HorizontalAlignment = Enum.HorizontalAlignment.Center
-p5list.SortOrder = Enum.SortOrder.LayoutOrder
-p5list.Parent = P5
 MakePageHeader(P5, "ESP و Aimbot", "رؤية اللاعبين وقفل الكاميرا")
 
 MakeSpacer(P5, 6)
@@ -1500,11 +1475,6 @@ MakeInfoBox(P5,"ESP: يعرض اسم اللاعب ومسافته فوق رأسه
 local P6 = CreatePage()
 AddTab("🛡️","أمان",P6)
 InsertPageStyle(P6)
-local p6list = Instance.new("UIListLayout")
-p6list.Padding = UDim.new(0, 8)
-p6list.HorizontalAlignment = Enum.HorizontalAlignment.Center
-p6list.SortOrder = Enum.SortOrder.LayoutOrder
-p6list.Parent = P6
 MakePageHeader(P6, "الأمان والإعدادات", "حفظ الإعدادات والحماية")
 
 MakeSpacer(P6, 6)
