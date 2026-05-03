@@ -76,6 +76,7 @@ local Lang = {
 		Scripts        = "Scripts",
 		Animations     = "💃 Animations",
 		Cryptic        = "🔐 Cryptic Hub",
+		BTools         = "🛠️  F3X Building Tools",
 		-- Settings page
 		SettingsTitle  = "Settings",
 		SettingsSub    = "Admin panel configuration",
@@ -148,6 +149,7 @@ local Lang = {
 		Scripts        = "Scripts",
 		Animations     = "💃 Animations",
 		Cryptic        = "🔐 Cryptic Hub",
+		BTools         = "🛠️  أدوات البناء F3X",
 		-- Settings page
 		SettingsTitle  = "الإعدادات",
 		SettingsSub    = "إعدادات لوحة الإدارة",
@@ -1770,6 +1772,15 @@ local animationsBtn = MakeButton(PageExternalScripts, "Animations", C.Accent, 3,
 	end)
 end)
 
+local btoolsBtn = MakeButton(PageExternalScripts, "BTools", Color3.fromRGB(200, 160, 40), 4, function()
+	task.spawn(function()
+		local ok, err = pcall(function()
+			loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()
+		end)
+		if not ok then warn("[THAER X100] BTools (Infinite Yield) failed: " .. tostring(err)) end
+	end)
+end)
+
 -- ============================================================
 -- PAGE: SETTINGS
 -- ============================================================
@@ -1874,7 +1885,7 @@ local function ApplyLanguage()
 	flwBtn.Text            = T("FollowPlayer")
 	spcBtn.Text            = T("SpectatePlayer")
 	stopBtn.Text           = T("StopFollowSpec")
-
+	
 	-- ESP page
 	espHeaderT.Text        = T("ESPTitle")
 	espHeaderT.TextXAlignment = align
@@ -1895,6 +1906,7 @@ local function ApplyLanguage()
 	extSec1L.Text          = "▸  " .. T("Scripts"):upper()
 	animationsBtn.Text     = T("Animations")
 	crypticBtn.Text        = T("Cryptic")
+	btoolsBtn.Text         = T("BTools")
 
 	-- Settings page
 	setHeaderT.Text        = T("SettingsTitle")
