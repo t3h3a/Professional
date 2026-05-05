@@ -4,7 +4,7 @@
 --   Single-file LocalScript
 --   v2.0.0 — Interactions, AntiBlock, Invisibility, WallHack,
 --             Spectate+Chat, Outfit Copier, Visual Clones,
---             Greeting Loop, Instagram Link, Enhanced UI
+--             Greeting Loop, Time Warp, Instagram Link, Enhanced UI
 -- ============================================================
 
 local Players        = game:GetService("Players")
@@ -14,6 +14,7 @@ local UserInputService = game:GetService("UserInputService")
 local HttpService    = game:GetService("HttpService")
 local SoundService   = game:GetService("SoundService")
 local Workspace      = game:GetService("Workspace")
+local Lighting       = game:GetService("Lighting")
 local GuiService     = game:GetService("GuiService")
 local Chat           = game:GetService("Chat")
 
@@ -51,6 +52,9 @@ local Lang = {
         FlySpeed          = "Fly Speed",
         WalkSpeed         = "Walk Speed",
         JumpPower         = "Jump Power",
+        SectionWorld      = "World Time",
+        TimeWarpToggle    = "⏱️  Time Warp (10x)",
+        TimeWarpInfo      = "Advances Lighting.ClockTime using Heartbeat without touching movement or invisibility loops.",
         ResetCharacter    = "Reset Character",
         -- Checkpoints page
         CheckpointsTitle  = "Checkpoints",
@@ -127,6 +131,7 @@ local Lang = {
         StatFly           = "Fly",
         StatNoClip        = "NoClip",
         StatESP           = "ESP",
+        StatTimeWarp      = "Time",
         StatAntiAFK       = "AntiAFK",
     },
     AR = {
@@ -153,6 +158,9 @@ local Lang = {
         FlySpeed          = "سرعة الطيران",
         WalkSpeed         = "سرعة المشي",
         JumpPower         = "قوة القفز",
+        SectionWorld      = "وقت العالم",
+        TimeWarpToggle    = "⏱️  تسريع الوقت (10x)",
+        TimeWarpInfo      = "يحرّك Lighting.ClockTime عبر Heartbeat بدون التأثير على حلقات الحركة أو الاختفاء.",
         ResetCharacter    = "إعادة تعيين الشخصية",
         -- Checkpoints page
         CheckpointsTitle  = "نقاط الحفظ",
@@ -229,6 +237,7 @@ local Lang = {
         StatFly           = "طيران",
         StatNoClip        = "اختراق",
         StatESP           = "رادار",
+        StatTimeWarp      = "الوقت",
         StatAntiAFK       = "مكافحة الخمول",
     },
 }
@@ -249,9 +258,16 @@ end
 -- SETTINGS / STATE
 -- ============================================================
 
+-- القيم الافتراضية للحركة حتى نعرف متى تكون ميزة السرعة مفعلة.
+local DEFAULT_WALK_SPEED = 16
+-- سرعة مرور الوقت الطبيعية هنا تعني ساعة Roblox واحدة لكل دقيقة حقيقية.
+local NORMAL_CLOCK_HOURS_PER_SECOND = 1 / 60
+-- مضاعف تسريع الوقت المطلوب: عشرة أضعاف السرعة الطبيعية.
+local TIME_WARP_MULTIPLIER = 10
+
 local Config = {
     FlySpeed             = 40,
-    WalkSpeed            = 16,
+    WalkSpeed            = DEFAULT_WALK_SPEED,
     JumpPower            = 50,
     FlyEnabled           = false,
     NoClipEnabled        = false,
@@ -264,6 +280,7 @@ local Config = {
     GreetingEnabled      = false,
     ClonesEnabled        = false,
     CloneCount           = 5,
+    TimeWarpEnabled      = false,
     AnchorProtect        = false,
     VelocityProtect      = false,
     StateProtect         = false,
@@ -284,10 +301,12 @@ local AntiBlockConn      = nil
 local WallHackObjects    = {}
 local CloneModels        = {}
 local InvisConn          = nil
+local TimeWarpConn       = nil
 local SpectateLabel      = nil
 local SpectateChatConn   = nil
 local OriginalDesc       = nil
 local InteractionTarget  = nil
+local UpdateAntiBlock    = nil
 
 -- ============================================================
 -- SAVE / LOAD
@@ -337,6 +356,27 @@ end
 local function GetHRP()
     local c = GetCharacter()
     return c and c:FindFirstChild("HumanoidRootPart")
+end
+
+-- يتحقق هل ميزة السرعة مفعلة عن طريق مقارنة السرعة الحالية بالقيمة الافتراضية.
+local function IsSpeedFeatureActive()
+    return Config.WalkSpeed > DEFAULT_WALK_SPEED
+end
+
+-- يحدد متى يجب تشغيل حماية فك التثبيت تلقائياً بسبب الطيران أو السرعة.
+local function ShouldForceAntiAnchor()
+    return Config.FlyEnabled or IsSpeedFeatureActive()
+end
+
+-- يفك تثبيت كل أجزاء شخصية اللاعب حتى لا يستطيع سكريبت خارجي تجميدها.
+local function UnanchorCharacter()
+    local c = GetCharacter()
+    if not c then return end
+    for _, part in pairs(c:GetDescendants()) do
+        if part:IsA("BasePart") and part.Anchored then
+            pcall(function() part.Anchored = false end)
+        end
+    end
 end
 
 local function SafeGetCharParts()
@@ -389,6 +429,7 @@ end)
 local function StopFly()
     Config.FlyEnabled = false
     if FlyConn then FlyConn:Disconnect() FlyConn = nil end
+    if UpdateAntiBlock then UpdateAntiBlock() end
     local c = GetCharacter()
     if c then
         for _, v in pairs(c:GetDescendants()) do
@@ -415,6 +456,7 @@ local function StartFly()
         return
     end
     Config.FlyEnabled = true
+    if UpdateAntiBlock then UpdateAntiBlock() end
 
     for _, v in pairs(char:GetDescendants()) do
         if v.Name == "FlyVelocity" or v.Name == "FlyGyro" then
@@ -441,7 +483,7 @@ local function StartFly()
         local currentHum = GetHumanoid()
         if not Config.FlyEnabled or not currentHRP or not currentHum then StopFly() return end
         if not bv or not bv.Parent or not bg or not bg.Parent then StopFly() return end
-        if hrp.Anchored then hrp.Anchored = false end
+        if ShouldForceAntiAnchor() then UnanchorCharacter() end
 
         currentHum:ChangeState(Enum.HumanoidStateType.Physics)
         currentHum.PlatformStand = true
@@ -509,6 +551,27 @@ local function StartNoClip()
                 if p:IsA("BasePart") then pcall(function() p.CanCollide = false end) end
             end
         end
+    end)
+end
+
+-- ============================================================
+-- TIME WARP SYSTEM (Lighting.ClockTime عبر Heartbeat)
+-- ============================================================
+
+-- يوقف تسريع الوقت ويفصل الاتصال الخاص به فقط.
+local function StopTimeWarp()
+    Config.TimeWarpEnabled = false
+    if TimeWarpConn then TimeWarpConn:Disconnect() TimeWarpConn = nil end
+end
+
+-- يشغّل تسريع الوقت بعشرة أضعاف بدون لمس حلقات الاختفاء أو الحركة.
+local function StartTimeWarp()
+    StopTimeWarp()
+    Config.TimeWarpEnabled = true
+    TimeWarpConn = RunService.Heartbeat:Connect(function(dt)
+        if not Config.TimeWarpEnabled then StopTimeWarp() return end
+        local stepHours = dt * NORMAL_CLOCK_HOURS_PER_SECOND * TIME_WARP_MULTIPLIER
+        Lighting.ClockTime = (Lighting.ClockTime + stepHours) % 24
     end)
 end
 
@@ -860,6 +923,23 @@ end
 -- OUTFIT COPIER (HumanoidDescription)
 -- ============================================================
 
+-- يطبّق وصف الزي فوراً ويحاول إعادة بناء الملحقات مباشرة بعد التطبيق.
+local function ApplyHumanoidDescriptionNow(hum, desc)
+    if not hum or not desc then return end
+    local ok = pcall(function()
+        hum:ApplyDescription(desc, Enum.AssetTypeVerification.Always)
+    end)
+    if not ok then
+        pcall(function() hum:ApplyDescription(desc) end)
+    end
+    task.defer(function()
+        local freshHum = GetHumanoid()
+        if freshHum then
+            pcall(function() freshHum:BuildRigFromAttachments() end)
+        end
+    end)
+end
+
 local function CopyTargetOutfit(target)
     if not target then return end
     local char = GetCharacter()
@@ -878,7 +958,7 @@ local function CopyTargetOutfit(target)
         return Players:GetHumanoidDescriptionFromUserId(target.UserId)
     end)
     if ok and desc then
-        pcall(function() hum:ApplyDescription(desc) end)
+        ApplyHumanoidDescriptionNow(hum, desc)
     end
 end
 
@@ -886,14 +966,14 @@ local function RestoreMyOutfit()
     local hum = GetHumanoid()
     if not hum then return end
     if OriginalDesc then
-        pcall(function() hum:ApplyDescription(OriginalDesc) end)
+        ApplyHumanoidDescriptionNow(hum, OriginalDesc)
         OriginalDesc = nil
     else
         local ok, desc = pcall(function()
             return Players:GetHumanoidDescriptionFromUserId(LocalPlayer.UserId)
         end)
         if ok and desc then
-            pcall(function() hum:ApplyDescription(desc) end)
+            ApplyHumanoidDescriptionNow(hum, desc)
         end
     end
 end
@@ -911,8 +991,8 @@ local function StartAntiBlock()
         local hum = GetHumanoid()
         if not hrp or not hum then return end
 
-        if Config.AnchorProtect and hrp.Anchored then
-            hrp.Anchored = false
+        if Config.AnchorProtect or ShouldForceAntiAnchor() then
+            UnanchorCharacter()
         end
 
         if Config.VelocityProtect then
@@ -937,8 +1017,8 @@ local function StartAntiBlock()
     end)
 end
 
-local function UpdateAntiBlock()
-    local anyOn = Config.AnchorProtect or Config.VelocityProtect or Config.StateProtect or Config.SizeProtect
+function UpdateAntiBlock()
+    local anyOn = Config.AnchorProtect or Config.VelocityProtect or Config.StateProtect or Config.SizeProtect or ShouldForceAntiAnchor()
     if anyOn then
         if not AntiBlockConn then StartAntiBlock() end
     else
@@ -986,6 +1066,12 @@ LocalPlayer.CharacterAdded:Connect(function()
 
     task.wait(0.5)
 
+    local hum = GetHumanoid()
+    if hum then
+        hum.WalkSpeed = Config.WalkSpeed
+        hum.JumpPower = Config.JumpPower
+    end
+
     if wasFlying   then StartFly()          end
     if wasNoClip   then StartNoClip()       end
     if wasInvis    then StartInvisibility() end
@@ -998,6 +1084,15 @@ LocalPlayer.CharacterAdded:Connect(function()
     if wasClones   then SpawnClones(Config.CloneCount) end
     if wasGreeting then
         if InteractionTarget then StartGreeting(InteractionTarget) end
+    end
+    UpdateAntiBlock()
+end)
+
+task.defer(function()
+    local hum = GetHumanoid()
+    if hum then
+        hum.WalkSpeed = Config.WalkSpeed
+        hum.JumpPower = Config.JumpPower
     end
     UpdateAntiBlock()
 end)
@@ -1796,9 +1891,25 @@ local navDefs = {
 
 local navBtns = {}
 
+-- يضيف حركة دخول خفيفة لصفحة External Scripts وللـ Sidebar باستخدام TweenService.
+local function AnimateExternalScriptsSidebar()
+    local pulseColor = C.Sidebar:Lerp(C.AccentB, 0.18)
+    Sidebar.BackgroundColor3 = pulseColor
+    sbMaskBR.BackgroundColor3 = pulseColor
+    PageExternalScripts.Position = UDim2.new(0.04, 0, 0, 0)
+    PageExternalScripts.ScrollBarImageTransparency = 1
+    Tween(Sidebar, {BackgroundColor3 = C.Sidebar}, 0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+    Tween(sbMaskBR, {BackgroundColor3 = C.Sidebar}, 0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+    Tween(PageExternalScripts, {
+        Position = UDim2.fromScale(0, 0),
+        ScrollBarImageTransparency = 0,
+    }, 0.32, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+end
+
 local function ShowPage(name)
     for n, pg in pairs(Pages) do
         pg.Visible = (n == name)
+        if n ~= name then pg.Position = UDim2.fromScale(0, 0) end
     end
     for _, nb in pairs(navBtns) do
         local active = (nb.pageName == name)
@@ -1806,6 +1917,7 @@ local function ShowPage(name)
         Tween(nb.frame, {BackgroundTransparency = active and 0 or 1}, 0.2)
         nb.lbl.TextColor3 = active and C.White or C.SubText
     end
+    if name == "ExternalScripts" then AnimateExternalScriptsSidebar() end
     Config.CurrentPage = name
 end
 
@@ -1881,13 +1993,14 @@ local statItems = {
     {lbl="StatFly",    val=function() return Config.FlyEnabled     and "ON" or "OFF" end, color=function() return Config.FlyEnabled     and C.Success or C.SubText end},
     {lbl="StatNoClip", val=function() return Config.NoClipEnabled  and "ON" or "OFF" end, color=function() return Config.NoClipEnabled  and C.Success or C.SubText end},
     {lbl="StatESP",    val=function() return Config.ESPEnabled     and "ON" or "OFF" end, color=function() return Config.ESPEnabled     and C.Success or C.SubText end},
+    {lbl="StatTimeWarp",val=function() return Config.TimeWarpEnabled and "ON" or "OFF" end, color=function() return Config.TimeWarpEnabled and C.Success or C.SubText end},
     {lbl="StatAntiAFK",val=function() return Config.AntiAFKEnabled and "ON" or "OFF" end, color=function() return Config.AntiAFKEnabled and C.Success or C.SubText end},
 }
 
 local statValueLabels = {}
 for _, si in ipairs(statItems) do
     local col = Instance.new("Frame")
-    col.Size               = UDim2.new(0.25, 0, 1, 0)
+    col.Size               = UDim2.new(1 / #statItems, 0, 1, 0)
     col.BackgroundTransparency = 1
     col.Parent             = statusCard
 
@@ -1969,6 +2082,7 @@ local wsSlider, wsSliderLbl = MakeSlider(PageMovement, "WalkSpeed", 1, 200, Conf
     Config.WalkSpeed = v
     local h = GetHumanoid()
     if h then h.WalkSpeed = v end
+    UpdateAntiBlock()
 end)
 
 local jpSlider, jpSliderLbl = MakeSlider(PageMovement, "JumpPower", 1, 200, Config.JumpPower, 8, function(v)
@@ -1981,6 +2095,25 @@ local resetCharBtn = MakeButton(PageMovement, "ResetCharacter", C.Danger, 9, fun
     local h = GetHumanoid()
     if h then h.Health = 0 end
 end)
+
+local movSec3, movSec3L = MakeSectionLabel(PageMovement, T("SectionWorld"), 10)
+
+local _, timeWarpUpdate, timeWarpLbl
+_, timeWarpUpdate, timeWarpLbl = MakeToggle(PageMovement, "TimeWarpToggle", false, 11, function(v)
+    if v then StartTimeWarp() else StopTimeWarp() end
+end)
+
+local timeWarpInfo = Instance.new("TextLabel")
+timeWarpInfo.Size              = UDim2.new(0.97, 0, 0, 34)
+timeWarpInfo.BackgroundTransparency = 1
+timeWarpInfo.Font              = Enum.Font.Gotham
+timeWarpInfo.Text              = T("TimeWarpInfo")
+timeWarpInfo.TextColor3        = C.SubText
+timeWarpInfo.TextSize          = 10
+timeWarpInfo.TextWrapped       = true
+timeWarpInfo.LayoutOrder       = 12
+timeWarpInfo.TextXAlignment    = GetTextAlign()
+timeWarpInfo.Parent            = PageMovement
 
 -- ============================================================
 -- PAGE: CHECKPOINTS
@@ -2489,9 +2622,15 @@ end)
 
 local resetSetBtn = MakeButton(PageSettings, "ResetDefaults", C.Danger, 6, function()
     Config.FlySpeed    = 40
-    Config.WalkSpeed   = 16
+    Config.WalkSpeed   = DEFAULT_WALK_SPEED
     Config.JumpPower   = 50
     Config.MusicVolume = 0.5
+    local h = GetHumanoid()
+    if h then
+        h.WalkSpeed = Config.WalkSpeed
+        h.JumpPower = Config.JumpPower
+    end
+    UpdateAntiBlock()
 end)
 
 local setSec3, setSec3L = MakeSectionLabel(PageSettings, T("UI"), 7)
@@ -2539,11 +2678,15 @@ local function ApplyLanguage()
     movHeaderS.TextXAlignment = align
     movSec1L.Text          = "▸  " .. T("SectionFlight"):upper()
     movSec2L.Text          = "▸  " .. T("SectionCharacter"):upper()
+    movSec3L.Text          = "▸  " .. T("SectionWorld"):upper()
     if flyToggleLbl    then flyToggleLbl.Text    = T("FlyMode")        ; flyToggleLbl.TextXAlignment    = align end
     if noclipToggleLbl then noclipToggleLbl.Text = T("NoClip")         ; noclipToggleLbl.TextXAlignment = align end
+    if timeWarpLbl     then timeWarpLbl.Text     = T("TimeWarpToggle") ; timeWarpLbl.TextXAlignment     = align end
     if flySliderLbl    then flySliderLbl.Text    = T("FlySpeed")       ; flySliderLbl.TextXAlignment    = align end
     if wsSliderLbl     then wsSliderLbl.Text     = T("WalkSpeed")      ; wsSliderLbl.TextXAlignment     = align end
     if jpSliderLbl     then jpSliderLbl.Text     = T("JumpPower")      ; jpSliderLbl.TextXAlignment     = align end
+    timeWarpInfo.Text      = T("TimeWarpInfo")
+    timeWarpInfo.TextXAlignment = align
     resetCharBtn.Text      = T("ResetCharacter")
 
     cpHeaderT.Text         = T("CheckpointsTitle")
@@ -2819,4 +2962,4 @@ UserInputService.InputBegan:Connect(function(i, gp)
 end)
 
 print("[THAER X100] Admin panel loaded. v2.0.0 | Press Right Alt to toggle.")
-print("[THAER X100] New: Interactions, Anti-Block, Invisibility, WallHack, Greeting Loop, Visual Clones, Outfit Copier.")
+print("[THAER X100] New: Interactions, Anti-Block, Invisibility, WallHack, Time Warp, Greeting Loop, Visual Clones, Outfit Copier.")
