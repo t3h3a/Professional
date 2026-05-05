@@ -316,8 +316,7 @@ local function StopFlyUnsafe()
 	if c then
 		for _, v in pairs(c:GetDescendants()) do
 			if v.Name == "FlyVelocity" or v.Name == "FlyGyro" or
-			   v.Name == "FlyAttachment" or v.Name == "FlyLinearVelocity" or
-			   v.Name == "FlyAlignOrientation" then
+			   v.Name == "FlyLinearVelocity" or v.Name == "FlyAlignOrientation" then
 				pcall(function() v:Destroy() end)
 			end
 		end
@@ -341,22 +340,6 @@ local function StopFly()
 	end
 end
 
-local function GetOrCreateFlyAttachment(rootPart)
-	if not rootPart then return nil end
-	local attachment = rootPart:FindFirstChild("FlyAttachment")
-	if attachment and attachment:IsA("Attachment") then
-		return attachment
-	end
-	if attachment then
-		pcall(function() attachment:Destroy() end)
-	end
-
-	attachment = Instance.new("Attachment")
-	attachment.Name = "FlyAttachment"
-	attachment.Parent = rootPart
-	return attachment
-end
-
 local function StartFlyUnsafe()
 	-- Always cleanly stop any previous fly first
 	StopFly()
@@ -377,37 +360,27 @@ local function StartFlyUnsafe()
 	-- Clean up any leftover physics objects
 	for _, v in pairs(char:GetDescendants()) do
 		if v.Name == "FlyVelocity" or v.Name == "FlyGyro" or
-		   v.Name == "FlyAttachment" or v.Name == "FlyLinearVelocity" or
-		   v.Name == "FlyAlignOrientation" then
+		   v.Name == "FlyLinearVelocity" or v.Name == "FlyAlignOrientation" then
 			pcall(function() v:Destroy() end)
 		end
 	end
 
-	local flyAttachment = GetOrCreateFlyAttachment(hrp)
-	if not flyAttachment then
-		warn("[THAER X100] Fly: Could not create attachment.")
-		Config.FlyEnabled = false
-		return
-	end
-
-	local flyVelocity = Instance.new("LinearVelocity")
-	flyVelocity.Name = "FlyLinearVelocity"
-	flyVelocity.Attachment0 = flyAttachment
-	flyVelocity.RelativeTo = Enum.ActuatorRelativeTo.World
-	flyVelocity.VectorVelocity = Vector3.zero
-	flyVelocity.MaxForce = 1000000000
+	local flyVelocity = Instance.new("BodyVelocity")
+	flyVelocity.Name = "FlyVelocity"
+	flyVelocity.Velocity = Vector3.zero
+	flyVelocity.MaxForce = Vector3.new(1000000000, 1000000000, 1000000000)
+	flyVelocity.P = 10000
 	flyVelocity.Parent = hrp
 
-	local flyOrientation = Instance.new("AlignOrientation")
-	flyOrientation.Name = "FlyAlignOrientation"
-	flyOrientation.Attachment0 = flyAttachment
-	flyOrientation.Mode = Enum.OrientationAlignmentMode.OneAttachment
-	flyOrientation.Responsiveness = 25
-	flyOrientation.MaxTorque = 1000000000
-	flyOrientation.CFrame = hrp.CFrame
-	flyOrientation.Parent = hrp
+	local flyGyro = Instance.new("BodyGyro")
+	flyGyro.Name = "FlyGyro"
+	flyGyro.MaxTorque = Vector3.new(1000000000, 1000000000, 1000000000)
+	flyGyro.P = 9000
+	flyGyro.D = 500
+	flyGyro.CFrame = hrp.CFrame
+	flyGyro.Parent = hrp
 
-	FlyConn = RunService.Heartbeat:Connect(function()
+	FlyConn = RunService.RenderStepped:Connect(function()
 		local okTick, tickErr = pcall(function()
 		-- Validate everything each tick
 		local currentHRP = GetHRP()
@@ -424,17 +397,13 @@ local function StartFlyUnsafe()
 		end
 
 		-- Check physics objects still exist
-		if not currentHRP.Parent or not flyAttachment.Parent or
-		   not flyVelocity.Parent or not flyOrientation.Parent then
+		if not currentHRP.Parent or not flyVelocity.Parent or not flyGyro.Parent then
 			StopFly()
 			return
 		end
 
 		-- Keep humanoid physics under the flight constraints.
-		if currentHum:GetState() ~= Enum.HumanoidStateType.Physics then
-			currentHum:ChangeState(Enum.HumanoidStateType.Physics)
-		end
-		currentHum.PlatformStand = true
+		pcall(function() currentHum.PlatformStand = true end)
 
 		local speed = Config.FlySpeed
 		local shift = UserInputService:IsKeyDown(Enum.KeyCode.LeftShift)
@@ -466,15 +435,15 @@ local function StartFlyUnsafe()
 		end
 
 		if dir.Magnitude > 0 then
-			flyVelocity.VectorVelocity = dir.Unit * speed
+			flyVelocity.Velocity = dir.Unit * speed
 		else
-			flyVelocity.VectorVelocity = Vector3.zero
+			flyVelocity.Velocity = Vector3.zero
 		end
 
 		-- Gyro always follows camera horizontal look
 		local flatLook = Vector3.new(cf.LookVector.X, 0, cf.LookVector.Z)
 		if flatLook.Magnitude > 0.01 then
-			flyOrientation.CFrame = CFrame.new(Vector3.zero, flatLook)
+			flyGyro.CFrame = CFrame.new(Vector3.zero, flatLook)
 		end
 		end)
 		if not okTick then
@@ -498,7 +467,7 @@ local function SetInvisibilityUnsafe(state)
 	if not char then return end
 
 	for _, v in pairs(char:GetDescendants()) do
-		if v:IsA("BasePart") or v:IsA("Decal") then
+		if v and v:IsA("BasePart") then
 			if state then
 				if InvisibilityOriginalTransparency[v] == nil then
 					InvisibilityOriginalTransparency[v] = v.Transparency
@@ -541,7 +510,7 @@ local function SetInvisibility(state)
 	end
 end
 
-local function FastForwardTime(enabled)
+local function FastForwardTimeUnsafe(enabled)
 	Config.TimeWarpEnabled = enabled
 	_G.FastTime = enabled
 	TimeWarpToken = TimeWarpToken + 1
@@ -551,10 +520,26 @@ local function FastForwardTime(enabled)
 	local token = TimeWarpToken
 	task.spawn(function()
 		while _G.FastTime and Config.TimeWarpEnabled and token == TimeWarpToken do
-			Lighting.ClockTime = (Lighting.ClockTime + 0.5) % 24
-			task.wait(0.01)
+			local okTick, tickErr = pcall(function()
+				Lighting.ClockTime = (Lighting.ClockTime + 0.2) % 24
+			end)
+			if not okTick then
+				WarnFeature("TimeWarp loop", tickErr)
+				Config.TimeWarpEnabled = false
+				_G.FastTime = false
+			end
+			task.wait(0.03)
 		end
 	end)
+end
+
+local function FastForwardTime(enabled)
+	local ok, err = pcall(FastForwardTimeUnsafe, enabled)
+	if not ok then
+		Config.TimeWarpEnabled = false
+		_G.FastTime = false
+		WarnFeature("TimeWarp", err)
+	end
 end
 
 -- Restart fly if character respawns while fly is "on"
@@ -658,6 +643,11 @@ local function CopyOutfitUnsafe(target)
 	local char = GetCharacter()
 	local targetChar = target.Character
 	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	if not (targetChar and char and hum) then return end
+	task.wait(0.1)
+	targetChar = target.Character
+	char = GetCharacter()
+	hum = char and char:FindFirstChildOfClass("Humanoid")
 	if not (targetChar and char and hum) then return end
 
 	for _, v in pairs(char:GetChildren()) do
@@ -1706,7 +1696,7 @@ local homeServerSec, homeServerSecL = MakeSectionLabel(PageHome, T("ServerTools"
 
 local _, timeWarpUpdate, timeWarpToggleLbl
 _, timeWarpUpdate, timeWarpToggleLbl = MakeToggle(PageHome, "TimeWarp", Config.TimeWarpEnabled, 5, function(v)
-	FastForwardTime(v)
+	pcall(function() FastForwardTime(v) end)
 end)
 
 -- ============================================================
@@ -1718,7 +1708,9 @@ local movSec1, movSec1L = MakeSectionLabel(PageMovement, T("SectionFlight"), 2)
 
 local _, flyToggleUpdate, flyToggleLbl
 _, flyToggleUpdate, flyToggleLbl = MakeToggle(PageMovement, "FlyMode", false, 3, function(v)
-	if v then StartFly() else StopFly() end
+	pcall(function()
+		if v then StartFly() else StopFly() end
+	end)
 end)
 
 local flySlider, flySliderLbl = MakeSlider(PageMovement, "FlySpeed", 5, 200, Config.FlySpeed, 4, function(v)
@@ -1734,7 +1726,7 @@ end)
 
 local _, invisUpdate, invisToggleLbl
 _, invisUpdate, invisToggleLbl = MakeToggle(PageMovement, "Invis", Config.InvisibilityEnabled, 7, function(v)
-	SetInvisibility(v)
+	pcall(function() SetInvisibility(v) end)
 end)
 
 local wsSlider, wsSliderLbl = MakeSlider(PageMovement, "WalkSpeed", 1, 200, Config.WalkSpeed, 8, function(v)
@@ -1844,7 +1836,7 @@ end)
 
 local copyOutfitBtn = MakeButton(PagePlayers, "CopyOutfit", Color3.fromRGB(190, 120, 50), 8, function()
 	local t = GetPlayerByName(playerInput.Text)
-	if t then CopyOutfit(t) end
+	if t then pcall(function() CopyOutfit(t) end) end
 end)
 
 local stopBtn = MakeButton(PagePlayers, "StopFollowSpec", Color3.fromRGB(100, 100, 120), 9, function()
@@ -2148,8 +2140,6 @@ local function ApplyLanguage()
 end
 
 -- تشغيل الترجمة فوراً عند التحميل بعد تعريف كل الأزرار
-ApplyLanguage()
-
 -- Language toggle button callback
 langBtn.MouseButton1Click:Connect(function()
 	Tween(langBtn, {Size = UDim2.new(0.93, 0, 0, 31)}, 0.07)
@@ -2330,5 +2320,7 @@ UserInputService.InputBegan:Connect(function(i, gp)
 		end
 	end
 end)
+
+ApplyLanguage()
 
 print("[THAER X100] Admin panel loaded. v1.1.0 | Press Right Alt to toggle.")
