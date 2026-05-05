@@ -224,6 +224,7 @@ local ActiveMusic   = nil
 local InvisibilityOriginalTransparency = {}
 local InvisibilityOriginalDisplayDistanceType = nil
 local TimeWarpToken = 0
+local StartNoClip
 
 -- ============================================================
 -- SAVE / LOAD
@@ -288,6 +289,10 @@ local function Tween(obj, props, t, style, dir)
 	TweenService:Create(obj, TweenInfo.new(t or 0.3, style, dir), props):Play()
 end
 
+local function WarnFeature(feature, err)
+	warn("[THAER X100] " .. feature .. " failed: " .. tostring(err))
+end
+
 -- ============================================================
 -- ANTI-AFK
 -- ============================================================
@@ -304,7 +309,7 @@ end)
 -- FLY SYSTEM (FIXED & STABLE)
 -- ============================================================
 
-local function StopFly()
+local function StopFlyUnsafe()
 	Config.FlyEnabled = false
 	if FlyConn then FlyConn:Disconnect() FlyConn = nil end
 	local c = GetCharacter()
@@ -319,15 +324,40 @@ local function StopFly()
 	end
 	local h = GetHumanoid()
 	if h then
-		h:ChangeState(Enum.HumanoidStateType.GettingUp)
+		pcall(function() h:ChangeState(Enum.HumanoidStateType.GettingUp) end)
 		pcall(function() h.PlatformStand = false end)
 		-- دفع بسيط للأسفل للتأكد من استجابة الفيزياء فوراً
 		local hrp = GetHRP()
-		if hrp then hrp.AssemblyLinearVelocity = Vector3.new(0, -1, 0) end
+		if hrp then pcall(function() hrp.AssemblyLinearVelocity = Vector3.new(0, -1, 0) end) end
 	end
 end
 
-local function StartFly()
+local function StopFly()
+	Config.FlyEnabled = false
+	local ok, err = pcall(StopFlyUnsafe)
+	if not ok then
+		FlyConn = nil
+		WarnFeature("StopFly", err)
+	end
+end
+
+local function GetOrCreateFlyAttachment(rootPart)
+	if not rootPart then return nil end
+	local attachment = rootPart:FindFirstChild("FlyAttachment")
+	if attachment and attachment:IsA("Attachment") then
+		return attachment
+	end
+	if attachment then
+		pcall(function() attachment:Destroy() end)
+	end
+
+	attachment = Instance.new("Attachment")
+	attachment.Name = "FlyAttachment"
+	attachment.Parent = rootPart
+	return attachment
+end
+
+local function StartFlyUnsafe()
 	-- Always cleanly stop any previous fly first
 	StopFly()
 
@@ -353,16 +383,19 @@ local function StartFly()
 		end
 	end
 
-	local flyAttachment = Instance.new("Attachment")
-	flyAttachment.Name = "FlyAttachment"
-	flyAttachment.Parent = hrp
+	local flyAttachment = GetOrCreateFlyAttachment(hrp)
+	if not flyAttachment then
+		warn("[THAER X100] Fly: Could not create attachment.")
+		Config.FlyEnabled = false
+		return
+	end
 
 	local flyVelocity = Instance.new("LinearVelocity")
 	flyVelocity.Name = "FlyLinearVelocity"
 	flyVelocity.Attachment0 = flyAttachment
 	flyVelocity.RelativeTo = Enum.ActuatorRelativeTo.World
 	flyVelocity.VectorVelocity = Vector3.zero
-	flyVelocity.MaxForce = math.huge
+	flyVelocity.MaxForce = 1000000000
 	flyVelocity.Parent = hrp
 
 	local flyOrientation = Instance.new("AlignOrientation")
@@ -370,11 +403,12 @@ local function StartFly()
 	flyOrientation.Attachment0 = flyAttachment
 	flyOrientation.Mode = Enum.OrientationAlignmentMode.OneAttachment
 	flyOrientation.Responsiveness = 25
-	flyOrientation.MaxTorque = math.huge
+	flyOrientation.MaxTorque = 1000000000
 	flyOrientation.CFrame = hrp.CFrame
 	flyOrientation.Parent = hrp
 
 	FlyConn = RunService.Heartbeat:Connect(function()
+		local okTick, tickErr = pcall(function()
 		-- Validate everything each tick
 		local currentHRP = GetHRP()
 		local currentHum = GetHumanoid()
@@ -442,10 +476,23 @@ local function StartFly()
 		if flatLook.Magnitude > 0.01 then
 			flyOrientation.CFrame = CFrame.new(Vector3.zero, flatLook)
 		end
+		end)
+		if not okTick then
+			WarnFeature("Fly heartbeat", tickErr)
+			StopFly()
+		end
 	end)
 end
 
-local function SetInvisibility(state)
+local function StartFly()
+	local ok, err = pcall(StartFlyUnsafe)
+	if not ok then
+		Config.FlyEnabled = false
+		WarnFeature("StartFly", err)
+	end
+end
+
+local function SetInvisibilityUnsafe(state)
 	Config.InvisibilityEnabled = state
 	local char = GetCharacter()
 	if not char then return end
@@ -456,9 +503,9 @@ local function SetInvisibility(state)
 				if InvisibilityOriginalTransparency[v] == nil then
 					InvisibilityOriginalTransparency[v] = v.Transparency
 				end
-				v.Transparency = 1
+				pcall(function() v.Transparency = 1 end)
 			else
-				v.Transparency = InvisibilityOriginalTransparency[v] or 0
+				pcall(function() v.Transparency = InvisibilityOriginalTransparency[v] or 0 end)
 				InvisibilityOriginalTransparency[v] = nil
 			end
 		end
@@ -467,7 +514,7 @@ local function SetInvisibility(state)
 	local head = char:FindFirstChild("Head")
 	local nametag = head and head:FindFirstChild("Nametag")
 	if nametag and nametag.Enabled ~= nil then
-		nametag.Enabled = not state
+		pcall(function() nametag.Enabled = not state end)
 	end
 
 	local hum = char:FindFirstChildOfClass("Humanoid")
@@ -483,6 +530,14 @@ local function SetInvisibility(state)
 			end)
 			InvisibilityOriginalDisplayDistanceType = nil
 		end
+	end
+end
+
+local function SetInvisibility(state)
+	local ok, err = pcall(SetInvisibilityUnsafe, state)
+	if not ok then
+		Config.InvisibilityEnabled = false
+		WarnFeature("Invisibility", err)
 	end
 end
 
@@ -523,7 +578,7 @@ LocalPlayer.CharacterAdded:Connect(function()
 	if wasFlying then
 		StartFly()
 	end
-	if wasNoClip then
+	if wasNoClip and StartNoClip then
 		StartNoClip()
 	end
 	if wasInvisible then
@@ -548,7 +603,7 @@ local function StopNoClip()
 	end
 end
 
-function StartNoClip()
+StartNoClip = function()
 	Config.NoClipEnabled = true
 	NoClipConn = RunService.Stepped:Connect(function()
 		if not Config.NoClipEnabled then StopNoClip() return end
@@ -598,7 +653,7 @@ local function TeleportToPlayer(target)
 	end
 end
 
-local function CopyOutfit(target)
+local function CopyOutfitUnsafe(target)
 	if not target or target == LocalPlayer then return end
 	local char = GetCharacter()
 	local targetChar = target.Character
@@ -607,22 +662,29 @@ local function CopyOutfit(target)
 
 	for _, v in pairs(char:GetChildren()) do
 		if v:IsA("Shirt") or v:IsA("Pants") or v:IsA("ShirtGraphic") or v:IsA("Accessory") then
-			v:Destroy()
+			pcall(function() v:Destroy() end)
 		end
 	end
 
 	for _, v in pairs(targetChar:GetChildren()) do
 		if v:IsA("Shirt") or v:IsA("Pants") or v:IsA("ShirtGraphic") then
-			v:Clone().Parent = char
+			pcall(function() v:Clone().Parent = char end)
 		elseif v:IsA("Accessory") then
 			local clone = v:Clone()
 			local ok = pcall(function()
 				hum:AddAccessory(clone)
 			end)
 			if not ok then
-				clone.Parent = char
+				pcall(function() clone.Parent = char end)
 			end
 		end
+	end
+end
+
+local function CopyOutfit(target)
+	local ok, err = pcall(CopyOutfitUnsafe, target)
+	if not ok then
+		WarnFeature("CopyOutfit", err)
 	end
 end
 
