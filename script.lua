@@ -12,6 +12,7 @@ local UserInputService = game:GetService("UserInputService")
 local HttpService = game:GetService("HttpService")
 local SoundService = game:GetService("SoundService")
 local Workspace = game:GetService("Workspace")
+local Lighting = game:GetService("Lighting")
 
 local LocalPlayer = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
@@ -34,6 +35,8 @@ local Lang = {
 		Settings     = "Settings",
 		-- Home page
 		WelcomeMsg   = "Welcome to THAER X100 Admin Panel.\nUse the sidebar to navigate between tools.",
+		ServerTools  = "Server Tools",
+		TimeWarp     = "⚡ Time Warp (10x)",
 		-- Movement page
 		MovementTitle   = "Movement Tools",
 		MovementSub     = "Fly, speed, jump and collision debug",
@@ -41,6 +44,7 @@ local Lang = {
 		SectionCharacter= "Character",
 		FlyMode         = "✈️  Fly Mode",
 		NoClip          = "🧱  NoClip",
+		Invis           = "👻 Invisibility",
 		FlySpeed        = "Fly Speed",
 		WalkSpeed       = "Walk Speed",
 		JumpPower       = "Jump Power",
@@ -59,7 +63,10 @@ local Lang = {
 		TeleportTo     = "🔍  Teleport To Player",
 		FollowPlayer   = "👣  Follow Player",
 		SpectatePlayer = "🎥  Spectate Player",
+		KillTarget     = "💥 Kill Target",
+		CopyOutfit     = "👕 Copy Outfit",
 		StopFollowSpec = "⏹  Stop Follow / Spectate",
+		BringAll       = "🧲 Bring All",
 		PlayerList     = "Player List",
 		-- ESP page
 		ESPTitle       = "ESP / Overlay",
@@ -106,6 +113,8 @@ local Lang = {
 		Settings     = "الإعدادات",
 		-- Home page
 		WelcomeMsg   = "مرحباً في لوحة إدارة THAER X100.\nاستخدم الشريط الجانبي للتنقل بين الأدوات.",
+		ServerTools  = "أدوات السيرفر",
+		TimeWarp     = "⚡ تسريع الوقت (10x)",
 		-- Movement page
 		MovementTitle   = "أدوات الحركة",
 		MovementSub     = "الطيران والسرعة والقفز وإزالة التصادم",
@@ -113,6 +122,7 @@ local Lang = {
 		SectionCharacter= "الشخصية",
 		FlyMode         = "✈️  وضع الطيران",
 		NoClip          = "🧱  اختراق الجدران",
+		Invis           = "👻 الاختفاء",
 		FlySpeed        = "سرعة الطيران",
 		WalkSpeed       = "سرعة المشي",
 		JumpPower       = "قوة القفز",
@@ -131,7 +141,10 @@ local Lang = {
 		TeleportTo     = "🔍  انتقل إلى اللاعب",
 		FollowPlayer   = "👣  تتبع اللاعب",
 		SpectatePlayer = "🎥  مشاهدة اللاعب",
+		KillTarget     = "💥 قتل الهدف",
+		CopyOutfit     = "👕 نسخ الملابس",
 		StopFollowSpec = "⏹  إيقاف التتبع / المشاهدة",
+		BringAll       = "🧲 جلب الجميع",
 		PlayerList     = "قائمة اللاعبين",
 		-- ESP page
 		ESPTitle       = "الرادار / التراكب",
@@ -191,6 +204,8 @@ local Config = {
 	JumpPower       = 50,
 	FlyEnabled      = false,
 	NoClipEnabled   = false,
+	InvisibilityEnabled = false,
+	TimeWarpEnabled = false,
 	ESPEnabled      = false,
 	AntiAFKEnabled  = true,
 	MusicVolume     = 0.5,
@@ -206,6 +221,9 @@ local FlyConn       = nil
 local NoClipConn    = nil
 local ESPObjects    = {}
 local ActiveMusic   = nil
+local InvisibilityOriginalTransparency = {}
+local InvisibilityOriginalDisplayDistanceType = nil
+local TimeWarpToken = 0
 
 -- ============================================================
 -- SAVE / LOAD
@@ -292,7 +310,9 @@ local function StopFly()
 	local c = GetCharacter()
 	if c then
 		for _, v in pairs(c:GetDescendants()) do
-			if v.Name == "FlyVelocity" or v.Name == "FlyGyro" then
+			if v.Name == "FlyVelocity" or v.Name == "FlyGyro" or
+			   v.Name == "FlyAttachment" or v.Name == "FlyLinearVelocity" or
+			   v.Name == "FlyAlignOrientation" then
 				pcall(function() v:Destroy() end)
 			end
 		end
@@ -326,26 +346,33 @@ local function StartFly()
 
 	-- Clean up any leftover physics objects
 	for _, v in pairs(char:GetDescendants()) do
-		if v.Name == "FlyVelocity" or v.Name == "FlyGyro" then
+		if v.Name == "FlyVelocity" or v.Name == "FlyGyro" or
+		   v.Name == "FlyAttachment" or v.Name == "FlyLinearVelocity" or
+		   v.Name == "FlyAlignOrientation" then
 			pcall(function() v:Destroy() end)
 		end
 	end
 
-	-- Create BodyVelocity
-	local bv = Instance.new("BodyVelocity")
-	bv.Name     = "FlyVelocity"
-	bv.Velocity = Vector3.zero
-	bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-	bv.Parent   = hrp
+	local flyAttachment = Instance.new("Attachment")
+	flyAttachment.Name = "FlyAttachment"
+	flyAttachment.Parent = hrp
 
-	-- Create BodyGyro
-	local bg = Instance.new("BodyGyro")
-	bg.Name      = "FlyGyro"
-	bg.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
-	bg.P         = 9000
-	bg.D         = 500
-	bg.CFrame    = hrp.CFrame
-	bg.Parent    = hrp
+	local flyVelocity = Instance.new("LinearVelocity")
+	flyVelocity.Name = "FlyLinearVelocity"
+	flyVelocity.Attachment0 = flyAttachment
+	flyVelocity.RelativeTo = Enum.ActuatorRelativeTo.World
+	flyVelocity.VectorVelocity = Vector3.zero
+	flyVelocity.MaxForce = math.huge
+	flyVelocity.Parent = hrp
+
+	local flyOrientation = Instance.new("AlignOrientation")
+	flyOrientation.Name = "FlyAlignOrientation"
+	flyOrientation.Attachment0 = flyAttachment
+	flyOrientation.Mode = Enum.OrientationAlignmentMode.OneAttachment
+	flyOrientation.Responsiveness = 25
+	flyOrientation.MaxTorque = math.huge
+	flyOrientation.CFrame = hrp.CFrame
+	flyOrientation.Parent = hrp
 
 	FlyConn = RunService.Heartbeat:Connect(function()
 		-- Validate everything each tick
@@ -358,21 +385,22 @@ local function StartFly()
 		end
 
 		-- التأكد من أن اللاعب غير مثبت برمجياً (Anchored)
-		if hrp.Anchored then
-			hrp.Anchored = false
+		if currentHRP.Anchored then
+			currentHRP.Anchored = false
 		end
 
 		-- Check physics objects still exist
-		if not hrp or not hrp.Parent or not bv or not bv.Parent or not bg or not bg.Parent then
+		if not currentHRP.Parent or not flyAttachment.Parent or
+		   not flyVelocity.Parent or not flyOrientation.Parent then
 			StopFly()
 			return
 		end
 
-		-- تطبيق حالة السباحة باستمرار لضمان الحركة ومنع التعليق
-		if currentHum:GetState() ~= Enum.HumanoidStateType.Swimming then
-			currentHum:ChangeState(Enum.HumanoidStateType.Swimming)
+		-- Keep humanoid physics under the flight constraints.
+		if currentHum:GetState() ~= Enum.HumanoidStateType.Physics then
+			currentHum:ChangeState(Enum.HumanoidStateType.Physics)
 		end
-		currentHum.PlatformStand = false
+		currentHum.PlatformStand = true
 
 		local speed = Config.FlySpeed
 		local shift = UserInputService:IsKeyDown(Enum.KeyCode.LeftShift)
@@ -404,15 +432,72 @@ local function StartFly()
 		end
 
 		if dir.Magnitude > 0 then
-			bv.Velocity = dir.Unit * speed
+			flyVelocity.VectorVelocity = dir.Unit * speed
 		else
-			bv.Velocity = Vector3.zero
+			flyVelocity.VectorVelocity = Vector3.zero
 		end
 
 		-- Gyro always follows camera horizontal look
 		local flatLook = Vector3.new(cf.LookVector.X, 0, cf.LookVector.Z)
 		if flatLook.Magnitude > 0.01 then
-			bg.CFrame = CFrame.new(Vector3.zero, flatLook)
+			flyOrientation.CFrame = CFrame.new(Vector3.zero, flatLook)
+		end
+	end)
+end
+
+local function SetInvisibility(state)
+	Config.InvisibilityEnabled = state
+	local char = GetCharacter()
+	if not char then return end
+
+	for _, v in pairs(char:GetDescendants()) do
+		if v:IsA("BasePart") or v:IsA("Decal") then
+			if state then
+				if InvisibilityOriginalTransparency[v] == nil then
+					InvisibilityOriginalTransparency[v] = v.Transparency
+				end
+				v.Transparency = 1
+			else
+				v.Transparency = InvisibilityOriginalTransparency[v] or 0
+				InvisibilityOriginalTransparency[v] = nil
+			end
+		end
+	end
+
+	local head = char:FindFirstChild("Head")
+	local nametag = head and head:FindFirstChild("Nametag")
+	if nametag and nametag.Enabled ~= nil then
+		nametag.Enabled = not state
+	end
+
+	local hum = char:FindFirstChildOfClass("Humanoid")
+	if hum then
+		if state then
+			InvisibilityOriginalDisplayDistanceType = hum.DisplayDistanceType
+			pcall(function()
+				hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+			end)
+		elseif InvisibilityOriginalDisplayDistanceType ~= nil then
+			pcall(function()
+				hum.DisplayDistanceType = InvisibilityOriginalDisplayDistanceType
+			end)
+			InvisibilityOriginalDisplayDistanceType = nil
+		end
+	end
+end
+
+local function FastForwardTime(enabled)
+	Config.TimeWarpEnabled = enabled
+	_G.FastTime = enabled
+	TimeWarpToken = TimeWarpToken + 1
+
+	if not enabled then return end
+
+	local token = TimeWarpToken
+	task.spawn(function()
+		while _G.FastTime and Config.TimeWarpEnabled and token == TimeWarpToken do
+			Lighting.ClockTime = (Lighting.ClockTime + 0.5) % 24
+			task.wait(0.01)
 		end
 	end)
 end
@@ -421,11 +506,16 @@ end
 LocalPlayer.CharacterAdded:Connect(function()
 	local wasFlying   = Config.FlyEnabled
 	local wasNoClip   = Config.NoClipEnabled
+	local wasInvisible = Config.InvisibilityEnabled
 
 	Config.FlyEnabled    = false
 	Config.NoClipEnabled = false
+	if FlyConn then FlyConn:Disconnect() end
+	if NoClipConn then NoClipConn:Disconnect() end
 	FlyConn    = nil
 	NoClipConn = nil
+	InvisibilityOriginalTransparency = {}
+	InvisibilityOriginalDisplayDistanceType = nil
 
 	-- Wait for character to fully load
 	task.wait(0.5)
@@ -435,6 +525,9 @@ LocalPlayer.CharacterAdded:Connect(function()
 	end
 	if wasNoClip then
 		StartNoClip()
+	end
+	if wasInvisible then
+		SetInvisibility(true)
 	end
 end)
 
@@ -505,6 +598,34 @@ local function TeleportToPlayer(target)
 	end
 end
 
+local function CopyOutfit(target)
+	if not target or target == LocalPlayer then return end
+	local char = GetCharacter()
+	local targetChar = target.Character
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	if not (targetChar and char and hum) then return end
+
+	for _, v in pairs(char:GetChildren()) do
+		if v:IsA("Shirt") or v:IsA("Pants") or v:IsA("ShirtGraphic") or v:IsA("Accessory") then
+			v:Destroy()
+		end
+	end
+
+	for _, v in pairs(targetChar:GetChildren()) do
+		if v:IsA("Shirt") or v:IsA("Pants") or v:IsA("ShirtGraphic") then
+			v:Clone().Parent = char
+		elseif v:IsA("Accessory") then
+			local clone = v:Clone()
+			local ok = pcall(function()
+				hum:AddAccessory(clone)
+			end)
+			if not ok then
+				clone.Parent = char
+			end
+		end
+	end
+end
+
 local function StopFollow()
 	if FollowConn then FollowConn:Disconnect() FollowConn = nil end
 	FollowTarget = nil
@@ -541,6 +662,33 @@ local function StartSpectate(target)
 			Camera.CameraSubject = th
 		end
 	end)
+end
+
+local function KillPlayer(target)
+	local hum = target and target.Character and target.Character:FindFirstChildOfClass("Humanoid")
+	if hum then
+		hum.Health = 0
+	end
+end
+
+local function BringAllPlayers()
+	local hrp = GetHRP()
+	if not hrp then return end
+
+	local allPlayers = Players:GetPlayers()
+	local count = math.max(#allPlayers - 1, 1)
+	local index = 0
+	for _, p in pairs(allPlayers) do
+		if p ~= LocalPlayer then
+			local thrp = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+			if thrp then
+				index = index + 1
+				local angle = (index / count) * math.pi * 2
+				local offset = Vector3.new(math.cos(angle) * 4, 0, math.sin(angle) * 4)
+				thrp.CFrame = hrp.CFrame + offset
+			end
+		end
+	end
 end
 
 -- ============================================================
@@ -1492,6 +1640,13 @@ infoTxt.LayoutOrder        = 3
 infoTxt.TextXAlignment     = GetTextAlign()
 infoTxt.Parent             = PageHome
 
+local homeServerSec, homeServerSecL = MakeSectionLabel(PageHome, T("ServerTools"), 4)
+
+local _, timeWarpUpdate, timeWarpToggleLbl
+_, timeWarpUpdate, timeWarpToggleLbl = MakeToggle(PageHome, "TimeWarp", Config.TimeWarpEnabled, 5, function(v)
+	FastForwardTime(v)
+end)
+
 -- ============================================================
 -- PAGE: MOVEMENT
 -- ============================================================
@@ -1515,19 +1670,24 @@ _, noclipUpdate, noclipToggleLbl = MakeToggle(PageMovement, "NoClip", false, 6, 
 	if v then StartNoClip() else StopNoClip() end
 end)
 
-local wsSlider, wsSliderLbl = MakeSlider(PageMovement, "WalkSpeed", 1, 200, Config.WalkSpeed, 7, function(v)
+local _, invisUpdate, invisToggleLbl
+_, invisUpdate, invisToggleLbl = MakeToggle(PageMovement, "Invis", Config.InvisibilityEnabled, 7, function(v)
+	SetInvisibility(v)
+end)
+
+local wsSlider, wsSliderLbl = MakeSlider(PageMovement, "WalkSpeed", 1, 200, Config.WalkSpeed, 8, function(v)
 	Config.WalkSpeed = v
 	local h = GetHumanoid()
 	if h then h.WalkSpeed = v end
 end)
 
-local jpSlider, jpSliderLbl = MakeSlider(PageMovement, "JumpPower", 1, 200, Config.JumpPower, 8, function(v)
+local jpSlider, jpSliderLbl = MakeSlider(PageMovement, "JumpPower", 1, 200, Config.JumpPower, 9, function(v)
 	Config.JumpPower = v
 	local h = GetHumanoid()
 	if h then h.JumpPower = v end
 end)
 
-local resetCharBtn = MakeButton(PageMovement, "ResetCharacter", C.Danger, 9, function()
+local resetCharBtn = MakeButton(PageMovement, "ResetCharacter", C.Danger, 10, function()
 	local h = GetHumanoid()
 	if h then h.Health = 0 end
 end)
@@ -1620,24 +1780,29 @@ local killBtn = MakeButton(PagePlayers, "KillTarget", C.Danger, 7, function()
 	if t then KillPlayer(t) end
 end)
 
-local stopBtn = MakeButton(PagePlayers, "StopFollowSpec", Color3.fromRGB(100, 100, 120), 8, function()
+local copyOutfitBtn = MakeButton(PagePlayers, "CopyOutfit", Color3.fromRGB(190, 120, 50), 8, function()
+	local t = GetPlayerByName(playerInput.Text)
+	if t then CopyOutfit(t) end
+end)
+
+local stopBtn = MakeButton(PagePlayers, "StopFollowSpec", Color3.fromRGB(100, 100, 120), 9, function()
 	StopFollow()
 	StopSpectate()
 end)
 
-local plSecExtra, plSecExtraL = MakeSectionLabel(PagePlayers, T("General"), 9)
+local plSecExtra, plSecExtraL = MakeSectionLabel(PagePlayers, T("General"), 10)
 
-local bringAllBtn = MakeButton(PagePlayers, "BringAll", C.AccentB, 10, function()
+local bringAllBtn = MakeButton(PagePlayers, "BringAll", C.AccentB, 11, function()
 	BringAllPlayers()
 end)
 
 
-local plSec2, plSec2L = MakeSectionLabel(PagePlayers, T("PlayerList"), 12)
+local plSec2, plSec2L = MakeSectionLabel(PagePlayers, T("PlayerList"), 13)
 
 local playerListFrame = Instance.new("Frame")
 playerListFrame.Size          = UDim2.new(0.97, 0, 0, 100)
 playerListFrame.BackgroundColor3 = C.Card
-playerListFrame.LayoutOrder   = 13
+playerListFrame.LayoutOrder   = 14
 playerListFrame.Parent        = PagePlayers
 AddCorner(playerListFrame, 7)
 AddStroke(playerListFrame, C.Accent, 1)
@@ -1835,6 +2000,8 @@ local function ApplyLanguage()
 	for _, sv in ipairs(statValueLabels) do
 		sv.ll.Text = T(sv.si.lbl)
 	end
+	homeServerSecL.Text    = "▸  " .. T("ServerTools"):upper()
+	if timeWarpToggleLbl then timeWarpToggleLbl.Text = T("TimeWarp"); timeWarpToggleLbl.TextXAlignment = align end
 
 	-- Movement page
 	movHeaderT.Text        = T("MovementTitle")
@@ -1845,6 +2012,7 @@ local function ApplyLanguage()
 	movSec2L.Text          = "▸  " .. T("SectionCharacter"):upper()
 	if flyToggleLbl   then flyToggleLbl.Text   = T("FlyMode")   ; flyToggleLbl.TextXAlignment   = align end
 	if noclipToggleLbl then noclipToggleLbl.Text = T("NoClip")  ; noclipToggleLbl.TextXAlignment  = align end
+	if invisToggleLbl then invisToggleLbl.Text = T("Invis") ; invisToggleLbl.TextXAlignment = align end
 	if flySliderLbl   then flySliderLbl.Text    = T("FlySpeed") ; flySliderLbl.TextXAlignment    = align end
 	if wsSliderLbl    then wsSliderLbl.Text     = T("WalkSpeed"); wsSliderLbl.TextXAlignment     = align end
 	if jpSliderLbl    then jpSliderLbl.Text     = T("JumpPower"); jpSliderLbl.TextXAlignment     = align end
@@ -1867,13 +2035,17 @@ local function ApplyLanguage()
 	plHeaderS.Text         = T("PlayersSub")
 	plHeaderS.TextXAlignment = align
 	plSec1L.Text           = "▸  " .. T("TargetPlayer"):upper()
+	plSecExtraL.Text       = "▸  " .. T("General"):upper()
 	plSec2L.Text           = "▸  " .. T("PlayerList"):upper()
 	playerInput.PlaceholderText = T("PlayerNameHint")
 	playerInput.TextXAlignment  = align
 	tpBtn.Text             = T("TeleportTo")
 	flwBtn.Text            = T("FollowPlayer")
 	spcBtn.Text            = T("SpectatePlayer")
+	killBtn.Text           = T("KillTarget")
+	copyOutfitBtn.Text     = T("CopyOutfit")
 	stopBtn.Text           = T("StopFollowSpec")
+	bringAllBtn.Text       = T("BringAll")
 
 	-- ESP page
 	espHeaderT.Text        = T("ESPTitle")
