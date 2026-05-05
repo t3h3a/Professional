@@ -1,0 +1,13 @@
+{
+  "name": "NexusOmegaHack",
+  "tree": {
+    "$className": "DataModel",
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "ThaerAdminPanel": {
+          "$path": "ThaerAdminPanel.client.lua"
+        }
+      }
+    }
+  }
+}
