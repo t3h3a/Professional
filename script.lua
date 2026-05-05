@@ -126,7 +126,7 @@ local function LoadCfg()
 end
 LoadCfg()
 
--- دوال جلب الأجزاء بسرعة (Fast Character Access)
+-- دوال جلب الأجزاء بسرعة مع معالجة الأخطاء
 local function Char() return LP.Character end
 local function Hum()  local c=Char(); return c and c:FindFirstChildOfClass("Humanoid") end
 local function HRP()  local c=Char(); return c and c:FindFirstChild("HumanoidRootPart") end
@@ -168,14 +168,14 @@ local function StartFly()
 		if ch.Anchored then ch.Anchored=false end
 		if hm:GetState()~=Enum.HumanoidStateType.Swimming then hm:ChangeState(Enum.HumanoidStateType.Swimming)end
 		hm.PlatformStand=false
-		local spd=Cfg.FlySpeed;local cf=Camera.CFrame;local dir=Vector3.zero
+		local cf=Camera.CFrame;local dir=Vector3.zero
 		if UserInputService:IsKeyDown(Enum.KeyCode.W) then dir=dir+cf.LookVector end
 		if UserInputService:IsKeyDown(Enum.KeyCode.S) then dir=dir-cf.LookVector end
 		if UserInputService:IsKeyDown(Enum.KeyCode.A) then dir=dir-cf.RightVector end
 		if UserInputService:IsKeyDown(Enum.KeyCode.D) then dir=dir+cf.RightVector end
 		if UserInputService:IsKeyDown(Enum.KeyCode.Space) then dir=dir+Vector3.yAxis end
 		if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then dir=dir-Vector3.yAxis end
-		if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then spd=spd*2 end
+		local spd = UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) and Cfg.FlySpeed*2 or Cfg.FlySpeed
 		if IsMob and hm.MoveDirection.Magnitude>.1 then local m=hm.MoveDirection;dir=dir+Vector3.new(m.X,0,m.Z)end
 		bv.Velocity=dir.Magnitude>0 and dir.Unit*spd or Vector3.zero
 		local fl=Vector3.new(cf.LookVector.X,0,cf.LookVector.Z);if fl.Magnitude>.01 then bg.CFrame=CFrame.new(Vector3.zero,fl)end
@@ -265,11 +265,13 @@ local function ToggleAimbot(v)
     Cfg.Aimbot = v
     if v then
         AimbotConn = RunService.RenderStepped:Connect(function()
+            local myHrp = HRP()
+            if not myHrp then return end
             local dist = 1000
             local target = nil
             for _, p in pairs(Players:GetPlayers()) do
                 if p ~= LP and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-                    local d = (HRP().Position - p.Character.HumanoidRootPart.Position).Magnitude
+                    local d = (myHrp.Position - p.Character.HumanoidRootPart.Position).Magnitude
                     if d < dist then
                         dist = d
                         target = p.Character.HumanoidRootPart
@@ -630,7 +632,7 @@ local function MkPg(n)
 	local sf=Instance.new("ScrollingFrame")
 	sf.Name=n;sf.Size=UDim2.fromScale(1,1);sf.BackgroundTransparency=1;sf.BorderSizePixel=0
 	sf.ScrollBarThickness=3;sf.ScrollBarImageColor3=C.Acc
-	sf.CanvasSize=UDim2.new(0,0,0,0);sf.AutomaticCanvasSize=Enum.AutomaticSize.Y
+	sf.CanvasSize=UDim2.new(0,0,2,0);sf.AutomaticCanvasSize=Enum.AutomaticSize.Y
 	sf.Visible=false;sf.Parent=CA;LL(sf,6);Pd(sf,8,16,8,8)
 	Pages[n]=sf;return sf
 end
@@ -656,8 +658,8 @@ Pd(Side,6,6,2,2)
 local NavPages={"Home","Move","Cp","Pl","Esp","Ext","Time","Set"}
 local NavBtns={}
 for i,pg in ipairs(NavPages) do
+	local pageName = pg -- تأمين المتغير للكلوزر (Closure Fix)
 	local btn=Instance.new("TextButton")
-    -- الأزرار كبيرة لتناسب اللمس (Touch Friendly)
 	btn.Size=UDim2.new(1,0,0,IsMob and 55 or 48)
 	btn.BackgroundTransparency=1;btn.AutoButtonColor=false;btn.Text="";btn.LayoutOrder=i;btn.Parent=Side;Cor(btn,7)
 	local hl=Instance.new("Frame");hl.Size=UDim2.new(0,3,0.6,0);hl.AnchorPoint=Vector2.new(0,.5);hl.Position=UDim2.new(0,0,.5,0);hl.BackgroundColor3=C.Acc;hl.BackgroundTransparency=1;hl.BorderSizePixel=0;hl.Parent=btn;Cor(hl,2)
@@ -671,9 +673,9 @@ for i,pg in ipairs(NavPages) do
 		if on then Tw(btn,{BackgroundTransparency=0.82},.15);btn.BackgroundColor3=C.Acc;Tw(ic,{TextColor3=C.W},.15);Tw(tx,{TextColor3=C.Acc},.15);Tw(hl,{BackgroundTransparency=0},.15)
 		else Tw(btn,{BackgroundTransparency=1},.15);Tw(ic,{TextColor3=C.Sub},.15);Tw(tx,{TextColor3=C.Sub},.15);Tw(hl,{BackgroundTransparency=1},.15)end
 	end
-	table.insert(NavBtns,{btn=btn,ic=ic,tx=tx,txts=txts,set=SetAct,page=pg})
+	table.insert(NavBtns,{btn=btn,ic=ic,tx=tx,set=SetAct,page=pageName})
 	btn.MouseButton1Click:Connect(function()
-		for _,nb in ipairs(NavBtns) do nb.set(nb.page==pg)end;ShowPage(pg)
+		for _,nb in ipairs(NavBtns) do nb.set(nb.page==pageName)end;ShowPage(pageName)
 	end)
 end
 
@@ -712,14 +714,14 @@ end)
 -- ============================================================
 local mH,mHT,mHS=PgH(PG.Move,"movTitle","movSub",1)
 SecH(PG.Move,T("flySec"),2)
-local _,flySet,flyLbl=Tog(PG.Move,"flyTog",false,3,function(v)if v then StartFly()else StopFly()end end)
-local fslF,fslL=Sldr(PG.Move,"flySpd",5,250,Cfg.FlySpeed,4,function(v)Cfg.FlySpeed=v end)
+local _,flySet,flyLbl=Tog(PG.Move,"flyTog",Cfg.FlyOn,3,function(v)if v then StartFly()else StopFly()end end)
+local fslF,fslL=Sldr(PG.Move,"flySpd",5,500,Cfg.FlySpeed,4,function(v)Cfg.FlySpeed=v end)
 SecH(PG.Move,T("charSec"),5)
-Tog(PG.Move,"ncTog",false,6,function(v)if v then StartNc()else StopNc()end end)
-Tog(PG.Move,"godTog",false,7,function(v)ToggleGodMode(v)end)
-Tog(PG.Move,"infJump",false,8,function(v)ToggleInfJump(v)end)
-Sldr(PG.Move,"walkSpd",1,250,Cfg.WalkSpeed,9,function(v)Cfg.WalkSpeed=v;local h=Hum();if h then h.WalkSpeed=v end end)
-Sldr(PG.Move,"jumpPow",1,250,Cfg.JumpPower,10,function(v)Cfg.JumpPower=v;local h=Hum();if h then h.JumpPower=v end end)
+local _,ncSet,ncLbl=Tog(PG.Move,"ncTog",Cfg.NcOn,6,function(v)if v then StartNc()else StopNc()end end)
+local _,godSet,godLbl=Tog(PG.Move,"godTog",Cfg.GodMode,7,function(v)ToggleGodMode(v)end)
+local _,jumpSet,jumpLbl=Tog(PG.Move,"infJump",Cfg.InfJump,8,function(v)ToggleInfJump(v)end)
+local wslF,wslL=Sldr(PG.Move,"walkSpd",1,500,Cfg.WalkSpeed,9,function(v)Cfg.WalkSpeed=v;local h=Hum();if h then h.WalkSpeed=v end end)
+local jslF,jslL=Sldr(PG.Move,"jumpPow",1,500,Cfg.JumpPower,10,function(v)Cfg.JumpPower=v;local h=Hum();if h then h.JumpPower=v end end)
 Btn(PG.Move,"resetC",C.Err,11,function()local h=Hum();if h then h.Health=0 end end)
 
 -- ============================================================
