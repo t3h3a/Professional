@@ -12,6 +12,7 @@ local UserInputService = game:GetService("UserInputService")
 local HttpService = game:GetService("HttpService")
 local SoundService = game:GetService("SoundService")
 local Workspace = game:GetService("Workspace")
+local Lighting = game:GetService("Lighting")
 
 local LocalPlayer = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
@@ -60,6 +61,9 @@ local Lang = {
 		FollowPlayer   = "👣  Follow Player",
 		SpectatePlayer = "🎥  Spectate Player",
 		StopFollowSpec = "⏹  Stop Follow / Spectate",
+		CopyOutfit     = "Copy Outfit",
+		Invisibility   = "Invisibility",
+		TimeWarp       = "Time Warp",
 		PlayerList     = "Player List",
 		-- ESP page
 		ESPTitle       = "ESP / Overlay",
@@ -132,6 +136,9 @@ local Lang = {
 		FollowPlayer   = "👣  تتبع اللاعب",
 		SpectatePlayer = "🎥  مشاهدة اللاعب",
 		StopFollowSpec = "⏹  إيقاف التتبع / المشاهدة",
+		CopyOutfit     = "نسخ الزي",
+		Invisibility   = "الإخفاء",
+		TimeWarp       = "تسريع الوقت",
 		PlayerList     = "قائمة اللاعبين",
 		-- ESP page
 		ESPTitle       = "الرادار / التراكب",
@@ -193,6 +200,8 @@ local Config = {
 	NoClipEnabled   = false,
 	ESPEnabled      = false,
 	AntiAFKEnabled  = true,
+	AdminStealthEnabled = false,
+	TimeWarpEnabled = false,
 	MusicVolume     = 0.5,
 	CurrentPage     = "Home",
 }
@@ -206,6 +215,9 @@ local FlyConn       = nil
 local NoClipConn    = nil
 local ESPObjects    = {}
 local ActiveMusic   = nil
+local StealthOriginals = {}
+local StealthDisplayDistanceType = nil
+local StealthDescendantConn = nil
 
 -- ============================================================
 -- SAVE / LOAD
@@ -287,134 +299,146 @@ end)
 -- ============================================================
 
 local function StopFly()
-	Config.FlyEnabled = false
-	if FlyConn then FlyConn:Disconnect() FlyConn = nil end
-	local c = GetCharacter()
-	if c then
-		for _, v in pairs(c:GetDescendants()) do
-			if v.Name == "FlyVelocity" or v.Name == "FlyGyro" then
-				pcall(function() v:Destroy() end)
+	local ok, err = pcall(function()
+		Config.FlyEnabled = false
+		if FlyConn then FlyConn:Disconnect() FlyConn = nil end
+
+		local c = GetCharacter()
+		if c then
+			for _, v in pairs(c:GetDescendants()) do
+				if v.Name == "FlyVelocity" or v.Name == "FlyGyro" then
+					pcall(function() v:Destroy() end)
+				end
 			end
 		end
-	end
-	local h = GetHumanoid()
-	if h then
-		h:ChangeState(Enum.HumanoidStateType.GettingUp)
-		pcall(function() h.PlatformStand = false end)
-		-- دفع بسيط للأسفل للتأكد من استجابة الفيزياء فوراً
+
+		local h = GetHumanoid()
+		if h then
+			pcall(function()
+				h.PlatformStand = false
+				h.AutoRotate = true
+				h:ChangeState(Enum.HumanoidStateType.GettingUp)
+			end)
+		end
+
 		local hrp = GetHRP()
-		if hrp then hrp.AssemblyLinearVelocity = Vector3.new(0, -1, 0) end
+		if hrp then
+			hrp.AssemblyLinearVelocity = Vector3.new(0, -1, 0)
+		end
+	end)
+	if not ok then
+		warn("[THAER X100] Fly stop failed: " .. tostring(err))
 	end
 end
 
 local function StartFly()
-	-- Always cleanly stop any previous fly first
-	StopFly()
+	local ok, err = pcall(function()
+		StopFly()
 
-	-- Safely get character parts (wait if needed)
-	local char, hrp, hum
-	local ok = pcall(function()
+		local char, hrp, hum
 		char, hrp, hum = SafeGetCharParts()
-	end)
 
-	if not ok or not hrp or not hum then
-		warn("[THAER X100] Fly: Could not get character parts.")
-		return
-	end
-
-	Config.FlyEnabled = true
-
-	-- Clean up any leftover physics objects
-	for _, v in pairs(char:GetDescendants()) do
-		if v.Name == "FlyVelocity" or v.Name == "FlyGyro" then
-			pcall(function() v:Destroy() end)
-		end
-	end
-
-	-- Create BodyVelocity
-	local bv = Instance.new("BodyVelocity")
-	bv.Name     = "FlyVelocity"
-	bv.Velocity = Vector3.zero
-	bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-	bv.Parent   = hrp
-
-	-- Create BodyGyro
-	local bg = Instance.new("BodyGyro")
-	bg.Name      = "FlyGyro"
-	bg.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
-	bg.P         = 9000
-	bg.D         = 500
-	bg.CFrame    = hrp.CFrame
-	bg.Parent    = hrp
-
-	FlyConn = RunService.Heartbeat:Connect(function()
-		-- Validate everything each tick
-		local currentHRP = GetHRP()
-		local currentHum = GetHumanoid()
-
-		if not Config.FlyEnabled or not currentHRP or not currentHum then
-			StopFly()
+		if not char or not hrp or not hum then
+			warn("[THAER X100] Fly: Could not get character parts.")
 			return
 		end
 
-		-- التأكد من أن اللاعب غير مثبت برمجياً (Anchored)
-		if hrp.Anchored then
-			hrp.Anchored = false
+		Config.FlyEnabled = true
+
+		for _, v in pairs(char:GetDescendants()) do
+			if v.Name == "FlyVelocity" or v.Name == "FlyGyro" then
+				pcall(function() v:Destroy() end)
+			end
 		end
 
-		-- Check physics objects still exist
-		if not hrp or not hrp.Parent or not bv or not bv.Parent or not bg or not bg.Parent then
-			StopFly()
-			return
-		end
+		local bv = Instance.new("BodyVelocity")
+		bv.Name     = "FlyVelocity"
+		bv.Velocity = Vector3.zero
+		bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+		bv.P        = 12500
+		bv.Parent   = hrp
 
-		-- تطبيق حالة السباحة باستمرار لضمان الحركة ومنع التعليق
-		if currentHum:GetState() ~= Enum.HumanoidStateType.Swimming then
-			currentHum:ChangeState(Enum.HumanoidStateType.Swimming)
-		end
-		currentHum.PlatformStand = false
+		local bg = Instance.new("BodyGyro")
+		bg.Name      = "FlyGyro"
+		bg.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+		bg.P         = 90000
+		bg.D         = 1200
+		bg.CFrame    = hrp.CFrame
+		bg.Parent    = hrp
 
-		local speed = Config.FlySpeed
-		local shift = UserInputService:IsKeyDown(Enum.KeyCode.LeftShift)
-		if shift then speed = speed * 2 end
+		pcall(function()
+			hum.PlatformStand = true
+			hum.AutoRotate = false
+			hum:ChangeState(Enum.HumanoidStateType.Physics)
+		end)
 
-		local cam = Camera
-		local cf  = cam.CFrame
+		FlyConn = RunService.RenderStepped:Connect(function()
+			local tickOk, tickErr = pcall(function()
+				local currentHRP = GetHRP()
+				local currentHum = GetHumanoid()
+				local cam = Workspace.CurrentCamera or Camera
 
-		local dir = Vector3.zero
-		
-		-- حساب الاتجاه بناءً على نظر الكاميرا (3D Movement)
-		if UserInputService:IsKeyDown(Enum.KeyCode.W) then
-			dir = dir + cf.LookVector
-		end
-		if UserInputService:IsKeyDown(Enum.KeyCode.S) then
-			dir = dir - cf.LookVector
-		end
-		if UserInputService:IsKeyDown(Enum.KeyCode.A) then
-			dir = dir - cf.RightVector
-		end
-		if UserInputService:IsKeyDown(Enum.KeyCode.D) then
-			dir = dir + cf.RightVector
-		end
-		if UserInputService:IsKeyDown(Enum.KeyCode.Space) then -- صعود يدوي
-			dir = dir + Vector3.new(0, 1, 0)
-		end
-		if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then -- نزول يدوي
-			dir = dir - Vector3.new(0, 1, 0)
-		end
+				if not Config.FlyEnabled or not currentHRP or not currentHum or currentHRP ~= hrp then
+					StopFly()
+					return
+				end
 
-		if dir.Magnitude > 0 then
-			bv.Velocity = dir.Unit * speed
-		else
-			bv.Velocity = Vector3.zero
-		end
+				if not hrp.Parent or not bv.Parent or not bg.Parent or not cam then
+					StopFly()
+					return
+				end
 
-		-- Gyro always follows camera horizontal look
-		local flatLook = Vector3.new(cf.LookVector.X, 0, cf.LookVector.Z)
-		if flatLook.Magnitude > 0.01 then
-			bg.CFrame = CFrame.new(Vector3.zero, flatLook)
-		end
+				if hrp.Anchored then
+					hrp.Anchored = false
+				end
+
+				currentHum.PlatformStand = true
+				currentHum.AutoRotate = false
+
+				local cf = cam.CFrame
+				local dir = Vector3.zero
+
+				if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+					dir = dir + cf.LookVector
+				end
+				if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+					dir = dir - cf.LookVector
+				end
+				if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+					dir = dir - cf.RightVector
+				end
+				if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+					dir = dir + cf.RightVector
+				end
+				if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+					dir = dir + Vector3.new(0, 1, 0)
+				end
+				if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
+					dir = dir - Vector3.new(0, 1, 0)
+				end
+
+				local speed = Config.FlySpeed
+				if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
+					speed = speed * 2
+				end
+
+				bv.Velocity = dir.Magnitude > 0 and dir.Unit * speed or Vector3.zero
+
+				local look = cf.LookVector
+				if look.Magnitude > 0.01 then
+					bg.CFrame = CFrame.new(hrp.Position, hrp.Position + look)
+				end
+			end)
+			if not tickOk then
+				warn("[THAER X100] Fly tick failed: " .. tostring(tickErr))
+				StopFly()
+			end
+		end)
 	end)
+	if not ok then
+		warn("[THAER X100] Fly start failed: " .. tostring(err))
+		Config.FlyEnabled = false
+	end
 end
 
 -- Restart fly if character respawns while fly is "on"
@@ -424,8 +448,8 @@ LocalPlayer.CharacterAdded:Connect(function()
 
 	Config.FlyEnabled    = false
 	Config.NoClipEnabled = false
-	FlyConn    = nil
-	NoClipConn = nil
+	if FlyConn then FlyConn:Disconnect() FlyConn = nil end
+	if NoClipConn then NoClipConn:Disconnect() NoClipConn = nil end
 
 	-- Wait for character to fully load
 	task.wait(0.5)
@@ -469,6 +493,169 @@ function StartNoClip()
 		end
 	end)
 end
+
+-- ============================================================
+-- ADMIN STEALTH / MORPH / TIME CONTROL
+-- ============================================================
+
+local function IsStealthVisual(inst)
+	return inst:IsA("BasePart") or inst:IsA("Decal")
+end
+
+local function ApplyStealthToInstance(inst)
+	if IsStealthVisual(inst) then
+		if StealthOriginals[inst] == nil then
+			StealthOriginals[inst] = inst.Transparency
+		end
+		inst.Transparency = 1
+	end
+end
+
+local function SetAdminStealth(enabled)
+	local ok, err = pcall(function()
+		Config.AdminStealthEnabled = enabled
+
+		if StealthDescendantConn then
+			pcall(function() StealthDescendantConn:Disconnect() end)
+			StealthDescendantConn = nil
+		end
+
+		local char = GetCharacter()
+		local hum = GetHumanoid()
+		if not char then return end
+
+		if enabled then
+			StealthOriginals = {}
+			for _, inst in pairs(char:GetDescendants()) do
+				ApplyStealthToInstance(inst)
+			end
+
+			if hum then
+				StealthDisplayDistanceType = hum.DisplayDistanceType
+				hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+			end
+
+			if char.DescendantAdded then
+				StealthDescendantConn = char.DescendantAdded:Connect(function(inst)
+					pcall(function()
+						if Config.AdminStealthEnabled then
+							ApplyStealthToInstance(inst)
+						end
+					end)
+				end)
+			end
+		else
+			for inst, transparency in pairs(StealthOriginals) do
+				if inst and inst.Parent then
+					pcall(function() inst.Transparency = transparency end)
+				end
+			end
+			StealthOriginals = {}
+
+			if hum then
+				hum.DisplayDistanceType = StealthDisplayDistanceType or Enum.HumanoidDisplayDistanceType.Viewer
+			end
+			StealthDisplayDistanceType = nil
+		end
+	end)
+	if not ok then
+		warn("[THAER X100] Invisibility failed: " .. tostring(err))
+		Config.AdminStealthEnabled = false
+	end
+end
+
+local function IsAppearanceAsset(inst)
+	local className = inst.ClassName
+	return inst:IsA("Accessory")
+		or inst:IsA("Clothing")
+		or className == "Shirt"
+		or className == "Pants"
+		or className == "ShirtGraphic"
+		or className == "BodyColors"
+		or className == "CharacterMesh"
+end
+
+local function ClearLocalAppearance(char)
+	for _, inst in pairs(char:GetChildren()) do
+		if IsAppearanceAsset(inst) then
+			pcall(function() inst:Destroy() end)
+		end
+	end
+end
+
+local function CopyOutfitFromPlayer(target)
+	local ok, err = pcall(function()
+		if not target or not target.Parent then return end
+
+		task.wait(0.1)
+
+		local targetChar = target.Character
+		local localChar = GetCharacter()
+		if not targetChar or not localChar then return end
+
+		targetChar:WaitForChild("Humanoid", 2)
+		local localHum = localChar:FindFirstChildOfClass("Humanoid")
+
+		ClearLocalAppearance(localChar)
+
+		for _, inst in pairs(targetChar:GetChildren()) do
+			if IsAppearanceAsset(inst) then
+				local clone = inst:Clone()
+				if clone:IsA("Accessory") and localHum then
+					local added = pcall(function()
+						localHum:AddAccessory(clone)
+					end)
+					if not added then
+						clone.Parent = localChar
+					end
+				else
+					clone.Parent = localChar
+				end
+			end
+		end
+
+		if Config.AdminStealthEnabled then
+			SetAdminStealth(true)
+		end
+	end)
+	if not ok then
+		warn("[THAER X100] Copy outfit failed: " .. tostring(err))
+	end
+end
+
+local function SetTimeWarp(enabled)
+	local ok, err = pcall(function()
+		local wasEnabled = Config.TimeWarpEnabled
+		Config.TimeWarpEnabled = enabled
+
+		if not enabled or wasEnabled then return end
+
+		task.spawn(function()
+			while Config.TimeWarpEnabled do
+				local loopOk, loopErr = pcall(function()
+					Lighting.ClockTime = (Lighting.ClockTime + 0.2) % 24
+				end)
+				if not loopOk then
+					warn("[THAER X100] Time warp failed: " .. tostring(loopErr))
+					Config.TimeWarpEnabled = false
+					break
+				end
+				task.wait(0.03)
+			end
+		end)
+	end)
+	if not ok then
+		warn("[THAER X100] Time warp toggle failed: " .. tostring(err))
+		Config.TimeWarpEnabled = false
+	end
+end
+
+LocalPlayer.CharacterAdded:Connect(function()
+	task.wait(0.2)
+	if Config.AdminStealthEnabled then
+		SetAdminStealth(true)
+	end
+end)
 
 -- ============================================================
 -- CHECKPOINTS
@@ -1492,6 +1679,18 @@ infoTxt.LayoutOrder        = 3
 infoTxt.TextXAlignment     = GetTextAlign()
 infoTxt.Parent             = PageHome
 
+local mainAdminSec, mainAdminSecL = MakeSectionLabel(PageHome, T("General"), 4)
+
+local _, invisToggleUpdate, invisToggleLbl
+_, invisToggleUpdate, invisToggleLbl = MakeToggle(PageHome, "Invisibility", false, 5, function(v)
+	SetAdminStealth(v)
+end)
+
+local _, timeWarpToggleUpdate, timeWarpToggleLbl
+_, timeWarpToggleUpdate, timeWarpToggleLbl = MakeToggle(PageHome, "TimeWarp", false, 6, function(v)
+	SetTimeWarp(v)
+end)
+
 -- ============================================================
 -- PAGE: MOVEMENT
 -- ============================================================
@@ -1623,6 +1822,11 @@ end)
 local stopBtn = MakeButton(PagePlayers, "StopFollowSpec", Color3.fromRGB(100, 100, 120), 8, function()
 	StopFollow()
 	StopSpectate()
+end)
+
+local copyOutfitBtn = MakeButton(PagePlayers, "CopyOutfit", C.Success, 9, function()
+	local t = GetPlayerByName(playerInput.Text)
+	if t then CopyOutfitFromPlayer(t) end
 end)
 
 local plSecExtra, plSecExtraL = MakeSectionLabel(PagePlayers, T("General"), 9)
@@ -1835,6 +2039,9 @@ local function ApplyLanguage()
 	for _, sv in ipairs(statValueLabels) do
 		sv.ll.Text = T(sv.si.lbl)
 	end
+	mainAdminSecL.Text      = "▸  " .. T("General"):upper()
+	if invisToggleLbl then invisToggleLbl.Text = T("Invisibility"); invisToggleLbl.TextXAlignment = align end
+	if timeWarpToggleLbl then timeWarpToggleLbl.Text = T("TimeWarp"); timeWarpToggleLbl.TextXAlignment = align end
 
 	-- Movement page
 	movHeaderT.Text        = T("MovementTitle")
@@ -1867,6 +2074,7 @@ local function ApplyLanguage()
 	plHeaderS.Text         = T("PlayersSub")
 	plHeaderS.TextXAlignment = align
 	plSec1L.Text           = "▸  " .. T("TargetPlayer"):upper()
+	plSecExtraL.Text       = "▸  " .. T("General"):upper()
 	plSec2L.Text           = "▸  " .. T("PlayerList"):upper()
 	playerInput.PlaceholderText = T("PlayerNameHint")
 	playerInput.TextXAlignment  = align
@@ -1874,6 +2082,7 @@ local function ApplyLanguage()
 	flwBtn.Text            = T("FollowPlayer")
 	spcBtn.Text            = T("SpectatePlayer")
 	stopBtn.Text           = T("StopFollowSpec")
+	copyOutfitBtn.Text     = T("CopyOutfit")
 
 	-- ESP page
 	espHeaderT.Text        = T("ESPTitle")
