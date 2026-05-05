@@ -1,863 +1,2398 @@
 -- ============================================================
---   THAER X100  |  v2.1  |  Professional Admin Panel
---   لوحة إدارة ماب "اختبار الهكر"
+--   THAER X100 | Professional Admin Panel
+--   For private/personal Roblox game admin/debug use
+--   Single-file LocalScript
+--   v1.1.0 — Fixed Fly, Dual Language (AR/EN), Smaller UI
 -- ============================================================
--- [[ تم التعديل والتحسين بواسطة Gemini Code Assist ]]
 
-local Players          = game:GetService("Players")
-local RunService       = game:GetService("RunService")
-local TweenService     = game:GetService("TweenService")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
+local HttpService = game:GetService("HttpService")
+local SoundService = game:GetService("SoundService")
+local Workspace = game:GetService("Workspace")
 
--- جلب الخدمات مع حماية (Safe Service Loading)
-local function GetService(name)
-    local ok, s = pcall(game.GetService, game, name)
-    return ok and s or nil
-end
-
-local HttpService      = GetService("HttpService")
-local SoundService     = GetService("SoundService")
-local Workspace        = GetService("Workspace")
-local Lighting         = GetService("Lighting")
-local VirtualUser      = GetService("VirtualUser")
-local TeleportService  = GetService("TeleportService")
-
-local LP     = Players.LocalPlayer
+local LocalPlayer = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
-local IsMob  = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 
 -- ============================================================
--- اللغة
+-- LANGUAGE SYSTEM
 -- ============================================================
-local Lang = "AR"
-local L = {
-	AR={
-		title="⚡ THAER X100",
-		nav={[1]="🏠 رئيسية",[2]="✈ حركة",[3]="📍 حفظ",[4]="👥 لاعبين",[5]="👁 رادار",[6]="✨ إضافات",[7]="⏱ وقت",[8]="⚙ إعدادات"},
-		welcome="مرحباً في لوحة تحكم ماب اختبار الهكر",
-		movTitle="أدوات الحركة",movSub="طيران · اختراق · سرعة · قفز · عدم الموت",
-		flySec="الطيران",flyTog="✈ وضع الطيران",flySpd="سرعة الطيران",
-		charSec="الشخصية",ncTog="🧱 اختراق الجدران",walkSpd="سرعة المشي",jumpPow="قوة القفز",
-		resetC="💀 إعادة تعيين",godTog="😇 وضع عدم الموت",infJump="🦘 قفز لا نهائي",
-		cpTitle="نقاط الحفظ",cpSub="احفظ وانتقل للمواقع",slot="خانة",saveLbl="💾 حفظ",tpLbl="📍 انتقال",
-		plTitle="اللاعبين",plSub="إدارة اللاعبين",targetSec="اللاعب المستهدف",plHint="اسم اللاعب...",
-		tpTo="🔍 انتقال",follow="👣 تتبع",spec="🎥 مشاهدة",stopAll="⏹ إيقاف",
-		copyOutfit="👕 نسخ المظهر",plList="قائمة اللاعبين",killAll="⚔ قتل الجميع",
-		espTitle="الرادار والموسيقى",espSub="تراكب · موسيقى · ايمبوت",espTog="👁 رادار اللاعبين",
-		espInfo="يعرض اسم كل لاعب ومسافته عنك.",musicSec="مشغل الموسيقى",
-		aimTog="🎯 ايمبوت تلقائي",sndHint="معرف الصوت (أرقام)...",vol="الصوت",playM="▶ تشغيل",stopM="⏹ إيقاف",
-		extTitle="إضافات",extSub="اختفاء · نسخ مظهر",invisSec="الاختفاء",
-		outfitSec="نسخ المظهر",outfitInfo="اختر لاعباً ثم اضغط نسخ.",copyBtn="👕 نسخ مظهر اللاعب المختار",
-		clickerSec="النقر التلقائي",clickerTog="🖱 تفعيل Auto Clicker",
-		mouseTpInfo="اضغط مفتاح 'B' للانتقال لمكان الماوس",
-		timeTitle="التحكم بالوقت",timeSub="تسريع الوقت · منطقة الأورا",
-		timeSec="تسريع الوقت",timeTog="🌀 تسريع وقت السماء",timeSpd="سرعة الوقت",
-		auraSec="منطقة الأورا ⚡",auraInfo="لما تدخل المنطقة يتسارع الوقت 10×.",
-		auraHint="AuraZone",auraTog="⚡ تفعيل كشف الأورا",auraOff="⚡ الأورا: غير نشطة",auraOn="⚡ الأورا نشطة! ×10",
-		setTitle="الإعدادات",setSub="إعدادات اللوحة",genSec="عام",afkTog="💤 مكافحة الخمول",
-		dataSec="البيانات",saveCfg="💾 حفظ الإعدادات",resetDef="🔄 إعادة للافتراضي",
-		uiSec="الواجهة",hidePanel="🙈 إخفاء اللوحة",langSec="اللغة",langBtn="🌐 English",
-		ver="THAER X100  v2.0  |  للاستخدام الخاص",
-		statF="طيران",statN="اختراق",statE="رادار",statI="اختفاء",statT="وقت",statA="خمول",
+
+local CurrentLanguage = "EN"
+
+local Lang = {
+	EN = {
+		-- Sidebar nav
+		Home         = "Home",
+		Movement     = "Movement",
+		Checkpoints  = "Checkpoints",
+		Players      = "Players",
+		ESP          = "ESP",
+		ExternalScripts = "External Scripts",
+		Settings     = "Settings",
+		-- Home page
+		WelcomeMsg   = "Welcome to THAER X100 Admin Panel.\nUse the sidebar to navigate between tools.",
+		-- Movement page
+		MovementTitle   = "Movement Tools",
+		MovementSub     = "Fly, speed, jump and collision debug",
+		SectionFlight   = "Flight",
+		SectionCharacter= "Character",
+		FlyMode         = "✈️  Fly Mode",
+		NoClip          = "🧱  NoClip",
+		FlySpeed        = "Fly Speed",
+		WalkSpeed       = "Walk Speed",
+		JumpPower       = "Jump Power",
+		ResetCharacter  = "Reset Character",
+		-- Checkpoints page
+		CheckpointsTitle = "Checkpoints",
+		CheckpointsSub   = "Save and teleport to positions",
+		Slot             = "Slot",
+		Save             = "💾  Save",
+		Teleport         = "📍  Teleport",
+		-- Players page
+		PlayersTitle   = "Player Tools",
+		PlayersSub     = "Admin tools for managing players",
+		TargetPlayer   = "Target Player",
+		PlayerNameHint = "Player name...",
+		TeleportTo     = "🔍  Teleport To Player",
+		FollowPlayer   = "👣  Follow Player",
+		SpectatePlayer = "🎥  Spectate Player",
+		StopFollowSpec = "⏹  Stop Follow / Spectate",
+		PlayerList     = "Player List",
+		KillAll        = "⚔  Kill All Players",
+		BringAll       = "📥  Bring All Players",
+		-- ESP page
+		ESPTitle       = "ESP / Overlay",
+		ESPSub         = "Admin visibility tools",
+		PlayerOverlay  = "Player Overlay",
+		ShowNamesDist  = "👁  Show Player Names & Distance",
+		ESPInfo        = "Shows player names and their distance from you as a floating label. Useful for admin monitoring in your game.",
+		MusicPlayer    = "Music Player",
+		SoundIDHint    = "Sound Asset ID (numbers only)...",
+		Volume         = "Volume",
+		PlayMusic      = "▶  Play Music",
+		StopMusic      = "⏹  Stop Music",
+		-- External scripts page
+		Scripts        = "Scripts",
+		Animations     = "💃 Animations",
+		Cryptic        = "🔐 Cryptic Hub",
+		-- Settings page
+		SettingsTitle  = "Settings",
+		SettingsSub    = "Admin panel configuration",
+		General        = "General",
+		AntiAFK        = "💤  Anti-AFK",
+		Data           = "Data",
+		SaveSettings   = "💾  Save Settings",
+		ResetDefaults  = "🔄  Reset to Defaults",
+		UI             = "UI",
+		HidePanel      = "Hide Panel",
+		Language       = "Language",
+		LangToggle     = "🌐  Switch to Arabic / عربي",
+		Version        = "THAER X100  |  v1.1.0  |  For authorized admin use only",
+		-- Status bar
+		StatFly        = "Fly",
+		StatNoClip     = "NoClip",
+		StatESP        = "ESP",
+		StatAntiAFK    = "AntiAFK",
 	},
-	EN={
-		title="⚡ THAER X100",
-		nav={[1]="🏠 Home",[2]="✈ Move",[3]="📍 Saves",[4]="👥 Players",[5]="👁 Radar",[6]="✨ Extras",[7]="⏱ Time",[8]="⚙ Settings"},
-		welcome="Welcome to the Hacker Test Map Admin Panel",
-		movTitle="Movement Tools",movSub="Fly · NoClip · Speed · Jump · God",
-		flySec="Flight",flyTog="✈ Fly Mode",flySpd="Fly Speed",
-		charSec="Character",ncTog="🧱 NoClip",walkSpd="Walk Speed",jumpPow="Jump Power",
-		resetC="💀 Reset Character",godTog="😇 God Mode",infJump="🦘 Infinite Jump",
-		cpTitle="Checkpoints",cpSub="Save & teleport to positions",slot="Slot",saveLbl="💾 Save",tpLbl="📍 Teleport",
-		plTitle="Players",plSub="Manage players",targetSec="Target Player",plHint="Player name...",
-		tpTo="🔍 Teleport",follow="👣 Follow",spec="🎥 Spectate",stopAll="⏹ Stop All",
-		copyOutfit="👕 Copy Outfit",plList="Player List",killAll="⚔ Kill All",
-		espTitle="Radar & Music",espSub="Overlay · Music · Aimbot",espTog="👁 Player Radar",
-		espInfo="Shows player names and distance.",musicSec="Music Player",
-		aimTog="🎯 Auto Aimbot",sndHint="Sound ID (numbers)...",vol="Volume",playM="▶ Play",stopM="⏹ Stop",
-		extTitle="Extras",extSub="Invisibility · Outfit",invisSec="Invisibility",
-		outfitSec="Copy Outfit",outfitInfo="Select a player then press copy.",copyBtn="👕 Copy Selected Player's Outfit",
-		clickerSec="Auto Clicker",clickerTog="🖱 Enable Auto Clicker",
-		mouseTpInfo="Press 'B' key to teleport to mouse",
-		timeTitle="Time Control",timeSub="Time Warp · Aura Zone",
-		timeSec="Time Warp",timeTog="🌀 Speed Up Sky",timeSpd="Time Speed",
-		auraSec="Aura Zone ⚡",auraInfo="Enter the zone to speed up time 10×.",
-		auraHint="AuraZone",auraTog="⚡ Enable Aura Zone",auraOff="⚡ Aura: Inactive",auraOn="⚡ Aura Active! ×10",
-		setTitle="Settings",setSub="Panel config",genSec="General",afkTog="💤 Anti-AFK",
-		dataSec="Data",saveCfg="💾 Save Settings",resetDef="🔄 Reset Defaults",
-		uiSec="Interface",hidePanel="🙈 Hide Panel",langSec="Language",langBtn="🌐 عربي",
-		ver="THAER X100  v2.0  |  Authorized Use Only",
-		statF="Fly",statN="NoClip",statE="ESP",statI="Invis",statT="Time",statA="AFK",
+	AR = {
+		-- Sidebar nav
+		Home         = "الرئيسية",
+		Movement     = "الحركة",
+		Checkpoints  = "نقاط الحفظ",
+		Players      = "اللاعبين",
+		ESP          = "الرادار",
+		ExternalScripts = "External Scripts",
+		Settings     = "الإعدادات",
+		-- Home page
+		WelcomeMsg   = "مرحباً في لوحة إدارة THAER X100.\nاستخدم الشريط الجانبي للتنقل بين الأدوات.",
+		-- Movement page
+		MovementTitle   = "أدوات الحركة",
+		MovementSub     = "الطيران والسرعة والقفز وإزالة التصادم",
+		SectionFlight   = "الطيران",
+		SectionCharacter= "الشخصية",
+		FlyMode         = "✈️  وضع الطيران",
+		NoClip          = "🧱  اختراق الجدران",
+		FlySpeed        = "سرعة الطيران",
+		WalkSpeed       = "سرعة المشي",
+		JumpPower       = "قوة القفز",
+		ResetCharacter  = "إعادة تعيين الشخصية",
+		-- Checkpoints page
+		CheckpointsTitle = "نقاط الحفظ",
+		CheckpointsSub   = "احفظ وانتقل إلى المواقع",
+		Slot             = "خانة",
+		Save             = "💾  حفظ",
+		Teleport         = "📍  انتقال",
+		-- Players page
+		PlayersTitle   = "أدوات اللاعبين",
+		PlayersSub     = "أدوات الإدارة للاعبين",
+		TargetPlayer   = "اللاعب المستهدف",
+		PlayerNameHint = "اسم اللاعب...",
+		TeleportTo     = "🔍  انتقل إلى اللاعب",
+		FollowPlayer   = "👣  تتبع اللاعب",
+		SpectatePlayer = "🎥  مشاهدة اللاعب",
+		StopFollowSpec = "⏹  إيقاف التتبع / المشاهدة",
+		PlayerList     = "قائمة اللاعبين",
+		KillAll        = "⚔  قتل الجميع",
+		BringAll       = "📥  جلب الكل",
+		-- ESP page
+		ESPTitle       = "الرادار / التراكب",
+		ESPSub         = "أدوات الرؤية للمشرف",
+		PlayerOverlay  = "تراكب اللاعبين",
+		ShowNamesDist  = "👁  عرض أسماء اللاعبين والمسافة",
+		ESPInfo        = "يعرض أسماء اللاعبين ومسافتهم منك كعلامة عائمة. مفيد لمراقبة المشرف في لعبتك.",
+		MusicPlayer    = "مشغل الموسيقى",
+		SoundIDHint    = "معرف الصوت (أرقام فقط)...",
+		Volume         = "الصوت",
+		PlayMusic      = "▶  تشغيل الموسيقى",
+		StopMusic      = "⏹  إيقاف الموسيقى",
+		-- External scripts page
+		Scripts        = "Scripts",
+		Animations     = "💃 Animations",
+		Cryptic        = "🔐 Cryptic Hub",
+		-- Settings page
+		SettingsTitle  = "الإعدادات",
+		SettingsSub    = "إعدادات لوحة الإدارة",
+		General        = "عام",
+		AntiAFK        = "💤  مكافحة الخمول",
+		Data           = "البيانات",
+		SaveSettings   = "💾  حفظ الإعدادات",
+		ResetDefaults  = "🔄  إعادة للافتراضي",
+		UI             = "الواجهة",
+		HidePanel      = "إخفاء اللوحة",
+		Language       = "اللغة",
+		LangToggle     = "🌐  Switch to English / إنجليزي",
+		Version        = "THAER X100  |  v1.1.0  |  للاستخدام المرخص فقط",
+		-- Status bar
+		StatFly        = "طيران",
+		StatNoClip     = "اختراق",
+		StatESP        = "رادار",
+		StatAntiAFK    = "مكافحة الخمول",
 	},
 }
 
--- دالة الترجمة المحسنة مع نظام البحث البديل (Improved Translation with Fallback)
-local function T(k)
-    local current = L[Lang][k]
-    if current then return current end
-    local alt = (Lang == "AR") and L.EN or L.AR
-    return alt[k] or k
+local function T(key)
+	return (Lang[CurrentLanguage] and Lang[CurrentLanguage][key]) or key
+end
+
+local function IsArabic()
+	return CurrentLanguage == "AR"
+end
+
+local function GetTextAlign()
+	return IsArabic() and Enum.TextXAlignment.Right or Enum.TextXAlignment.Left
 end
 
 -- ============================================================
--- الإعدادات
+-- SETTINGS / STATE
 -- ============================================================
-local Cfg={FlySpeed=50,WalkSpeed=16,JumpPower=50,FlyOn=false,NcOn=false,ESPOn=false,AntiAFK=true,MusicVol=0.5,InvisOn=false,TimeOn=false,TimeSpeed=5,AuraOn=false,Page=1,GodMode=false,InfJump=false,AutoClicker=false,Aimbot=false}
-local CP={} local ESPObjs={} local ActiveMusic=nil local SelPlayer="" local AuraLbl=nil; local AuraActive=false
-local FlyConn,NcConn,TimeConn,AuraConn,FollowConn,SpectateConn,GodConn,InfJumpConn,AimbotConn=nil,nil,nil,nil,nil,nil,nil,nil,nil
 
-local function SaveCfg()
-    if not writefile then return end
-    pcall(function()
-        local d = HttpService:JSONEncode({FlySpeed=Cfg.FlySpeed,WalkSpeed=Cfg.WalkSpeed,JumpPower=Cfg.JumpPower,MusicVol=Cfg.MusicVol})
-        writefile("thaer_cfg.json", d)
-    end)
+local Config = {
+	FlySpeed        = 40,
+	WalkSpeed       = 16,
+	JumpPower       = 50,
+	FlyEnabled      = false,
+	NoClipEnabled   = false,
+	ESPEnabled      = false,
+	AntiAFKEnabled  = true,
+	MusicVolume     = 0.5,
+	CurrentPage     = "Home",
+}
+
+local Checkpoints   = {nil, nil, nil}
+local FollowTarget  = nil
+local SpectateTarget= nil
+local SpectateConn  = nil
+local FollowConn    = nil
+local FlyConn       = nil
+local NoClipConn    = nil
+local ESPObjects    = {}
+local ActiveMusic   = nil
+local FlyVertical   = 0 -- 0: Stable, 1: Up, -1: Down
+local FlyUI         = nil
+local flyBodyVelocity = nil
+local flyBodyGyro     = nil
+
+-- ============================================================
+-- SAVE / LOAD
+-- ============================================================
+
+local function SaveSettings()
+	local ok, data = pcall(function()
+		return HttpService:JSONEncode({
+			FlySpeed    = Config.FlySpeed,
+			WalkSpeed   = Config.WalkSpeed,
+			JumpPower   = Config.JumpPower,
+			MusicVolume = Config.MusicVolume,
+		})
+	end)
+	if ok and writefile then
+		pcall(writefile, "thaer_admin_settings.json", data)
+	end
 end
 
-local function LoadCfg()
-    if not readfile then return end
-    pcall(function()
-        local r = readfile("thaer_cfg.json")
-        if r then 
-            local t = HttpService:JSONDecode(r)
-            for k,v in pairs(t) do Cfg[k]=v end 
-        end
-    end)
-end
-LoadCfg()
-
--- دوال جلب الأجزاء بسرعة مع معالجة الأخطاء
-local function Char() return LP.Character end
-local function Hum()  local c=Char(); return c and c:FindFirstChildOfClass("Humanoid") end
-local function HRP()  local c=Char(); return c and c:FindFirstChild("HumanoidRootPart") end
-
-local function Tw(o,p,t,s,d)
-	TweenService:Create(o,TweenInfo.new(t or 0.22,s or Enum.EasingStyle.Quart,d or Enum.EasingDirection.Out),p):Play()
+local function LoadSettings()
+	if readfile then
+		local ok, raw = pcall(readfile, "thaer_admin_settings.json")
+		if ok and raw then
+			local ok2, t = pcall(HttpService.JSONDecode, HttpService, raw)
+			if ok2 and t then
+				for k, v in pairs(t) do Config[k] = v end
+			end
+		end
+	end
 end
 
--- منع الخمول (Anti-AFK)
-LP.Idled:Connect(function()
-	if Cfg.AntiAFK then pcall(function()VirtualUser:CaptureController();VirtualUser:ClickButton2(Vector2.new())end) end
+LoadSettings()
+
+-- ============================================================
+-- HELPER
+-- ============================================================
+
+local function GetCharacter()
+	return LocalPlayer.Character
+end
+
+local function GetHumanoid()
+	local c = GetCharacter()
+	return c and c:FindFirstChildOfClass("Humanoid")
+end
+
+local function GetHRP()
+	local c = GetCharacter()
+	return c and c:FindFirstChild("HumanoidRootPart")
+end
+
+local function SafeGetCharParts()
+	local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+	local hrp  = char:WaitForChild("HumanoidRootPart", 5)
+	local hum  = char:WaitForChild("Humanoid", 5)
+	return char, hrp, hum
+end
+
+local function Tween(obj, props, t, style, dir)
+	style = style or Enum.EasingStyle.Quart
+	dir   = dir   or Enum.EasingDirection.Out
+	TweenService:Create(obj, TweenInfo.new(t or 0.3, style, dir), props):Play()
+end
+
+-- ============================================================
+-- ANTI-AFK
+-- ============================================================
+
+local VirtualUser = game:GetService("VirtualUser")
+LocalPlayer.Idled:Connect(function()
+	if Config.AntiAFKEnabled then
+		VirtualUser:CaptureController()
+		VirtualUser:ClickButton2(Vector2.new())
+	end
 end)
 
 -- ============================================================
--- FLY
+-- FLY SYSTEM (FIXED & STABLE)
 -- ============================================================
+
+local function CreateFlyControls()
+	if FlyUI then FlyUI:Destroy() end
+	FlyUI = Instance.new("Frame")
+	FlyUI.Name = "FlyControls"
+	FlyUI.Size = UDim2.new(0, 60, 0, 130)
+	FlyUI.Position = UDim2.new(1, -70, 0.5, -65)
+	FlyUI.BackgroundTransparency = 1
+	FlyUI.Parent = ScreenGui
+
+	local up = MakeButtonRaw(FlyUI, "▲", C.Accent, 1, function() end)
+	up.Size = UDim2.new(1, 0, 0, 60)
+	up.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.Touch or i.UserInputType == Enum.UserInputType.MouseButton1 then FlyVertical = 1 end end)
+	up.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.Touch or i.UserInputType == Enum.UserInputType.MouseButton1 then FlyVertical = 0 end end)
+
+	local down = MakeButtonRaw(FlyUI, "▼", C.Accent, 2, function() end)
+	down.Size = UDim2.new(1, 0, 0, 60)
+	down.Position = UDim2.new(0, 0, 0, 70)
+	down.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.Touch or i.UserInputType == Enum.UserInputType.MouseButton1 then FlyVertical = -1 end end)
+	down.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.Touch or i.UserInputType == Enum.UserInputType.MouseButton1 then FlyVertical = 0 end end)
+end
+
 local function StopFly()
-    -- إيقاف الطيران وتنظيف المحركات الفيزيائية
-    -- Stops flight and cleans up physics objects
-	Cfg.FlyOn=false
-	if FlyConn then FlyConn:Disconnect();FlyConn=nil end
-	local c=Char();if c then for _,v in pairs(c:GetDescendants()) do if v.Name=="TBV"or v.Name=="TBG" then pcall(function()v:Destroy()end)end end end
-	local h=Hum();if h then pcall(function()h.PlatformStand=false end);h:ChangeState(Enum.HumanoidStateType.GettingUp)end
-	local hr=HRP();if hr then pcall(function()hr.AssemblyLinearVelocity=Vector3.new(0,-1,0)end)end
+	Config.FlyEnabled = false
+	if FlyConn then FlyConn:Disconnect() FlyConn = nil end
+	if FlyUI then FlyUI:Destroy() FlyUI = nil end
+	local c = GetCharacter()
+	if c then
+		for _, v in pairs(c:GetDescendants()) do
+			if v.Name == "ThrusterBV" or v.Name == "ThrusterBG" then
+				pcall(function() v:Destroy() end)
+			end
+		end
+	end
+	local h = GetHumanoid()
+	if h then
+		h:ChangeState(Enum.HumanoidStateType.GettingUp)
+		pcall(function() h.PlatformStand = false end)
+		-- دفع بسيط للأسفل للتأكد من استجابة الفيزياء فوراً
+		local hrp = GetHRP()
+		if hrp then hrp.AssemblyLinearVelocity = Vector3.new(0, -1, 0) end
+	end
 end
 
 local function StartFly()
-    -- تفعيل الطيران باستخدام BodyVelocity و BodyGyro
-    -- Enables flight using BodyVelocity and BodyGyro
-	StopFly();local char=Char(); local hrp=HRP(); local hum=Hum()
-	if not char or not hrp or not hum then return end;Cfg.FlyOn=true
-	for _,v in pairs(char:GetDescendants()) do if v.Name=="TBV"or v.Name=="TBG" then pcall(function()v:Destroy()end)end end
-	local bv=Instance.new("BodyVelocity");bv.Name="TBV";bv.Velocity=Vector3.zero;bv.MaxForce=Vector3.new(1e9,1e9,1e9);bv.Parent=hrp
-	local bg=Instance.new("BodyGyro");bg.Name="TBG";bg.MaxTorque=Vector3.new(1e9,1e9,1e9);bg.P=9000;bg.D=500;bg.CFrame=hrp.CFrame;bg.Parent=hrp
-	FlyConn=RunService.Heartbeat:Connect(function()
-		local ch=HRP();local hm=Hum()
-		if not Cfg.FlyOn or not ch or not hm then StopFly();return end
-		if not bv.Parent or not bg.Parent then StopFly();return end
-		if ch.Anchored then ch.Anchored=false end
-		if hm:GetState()~=Enum.HumanoidStateType.Swimming then hm:ChangeState(Enum.HumanoidStateType.Swimming)end
-		hm.PlatformStand=false
-		local cf=Camera.CFrame;local dir=Vector3.zero
-		if UserInputService:IsKeyDown(Enum.KeyCode.W) then dir=dir+cf.LookVector end
-		if UserInputService:IsKeyDown(Enum.KeyCode.S) then dir=dir-cf.LookVector end
-		if UserInputService:IsKeyDown(Enum.KeyCode.A) then dir=dir-cf.RightVector end
-		if UserInputService:IsKeyDown(Enum.KeyCode.D) then dir=dir+cf.RightVector end
-		if UserInputService:IsKeyDown(Enum.KeyCode.Space) then dir=dir+Vector3.yAxis end
-		if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then dir=dir-Vector3.yAxis end
-		local spd = UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) and Cfg.FlySpeed*2 or Cfg.FlySpeed
-		if IsMob and hm.MoveDirection.Magnitude>.1 then local m=hm.MoveDirection;dir=dir+Vector3.new(m.X,0,m.Z)end
-		bv.Velocity=dir.Magnitude>0 and dir.Unit*spd or Vector3.zero
-		local fl=Vector3.new(cf.LookVector.X,0,cf.LookVector.Z);if fl.Magnitude>.01 then bg.CFrame=CFrame.new(Vector3.zero,fl)end
+	-- Always cleanly stop any previous fly first
+	StopFly()
+
+	-- Safely get character parts (wait if needed)
+	local char, hrp, hum
+	local ok = pcall(function()
+		char, hrp, hum = SafeGetCharParts()
+	end)
+
+	if not ok or not hrp or not hum then
+		warn("[THAER X100] Fly: Could not get character parts.")
+		return
+	end
+
+	Config.FlyEnabled = true
+	if IsMob then CreateFlyControls() end
+
+	-- Clean up any leftover physics objects
+	for _, v in pairs(char:GetDescendants()) do
+		if v.Name == "FlyVelocity" or v.Name == "FlyGyro" then
+			pcall(function() v:Destroy() end)
+		end
+	end
+
+	-- Create BodyVelocity
+	local bv = Instance.new("BodyVelocity")
+	bv.Name     = "FlyVelocity"
+	bv.Velocity = Vector3.zero
+	bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+	bv.Parent   = hrp
+
+	-- Create BodyGyro
+	local bg = Instance.new("BodyGyro")
+	bg.Name      = "FlyGyro"
+	bg.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+	bg.P         = 9000
+	bg.D         = 500
+	bg.CFrame    = hrp.CFrame
+	bg.Parent    = hrp
+
+	FlyConn = RunService.Heartbeat:Connect(function()
+		-- Validate everything each tick
+		local currentHRP = GetHRP()
+		local currentHum = GetHumanoid()
+
+		if not Config.FlyEnabled or not currentHRP or not currentHum then
+			StopFly()
+			return
+		end
+
+		-- التأكد من أن اللاعب غير مثبت برمجياً (Anchored)
+		if hrp.Anchored then
+			hrp.Anchored = false
+		end
+
+		-- Check physics objects still exist
+		if not hrp or not hrp.Parent or not bv or not bv.Parent or not bg or not bg.Parent then
+			StopFly()
+			return
+		end
+
+		-- تطبيق حالة السباحة باستمرار لضمان الحركة ومنع التعليق
+		if currentHum:GetState() ~= Enum.HumanoidStateType.Swimming then
+			currentHum:ChangeState(Enum.HumanoidStateType.Swimming)
+		end
+		currentHum.PlatformStand = false
+
+		local speed = Config.FlySpeed
+		local shift = UserInputService:IsKeyDown(Enum.KeyCode.LeftShift)
+		if shift then speed = speed * 2 end
+
+		local cam = Camera
+		local cf  = cam.CFrame
+
+		local dir = Vector3.zero
+		
+		-- حساب الاتجاه بناءً على نظر الكاميرا (3D Movement)
+		if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+			dir = dir + cf.LookVector
+		end
+		if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+			dir = dir - cf.LookVector
+		end
+		if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+			dir = dir - cf.RightVector
+		end
+		if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+			dir = dir + cf.RightVector
+		end
+		if UserInputService:IsKeyDown(Enum.KeyCode.Space) then -- صعود يدوي
+			dir = dir + Vector3.new(0, 1, 0)
+		end
+		if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then -- نزول يدوي
+			dir = dir - Vector3.new(0, 1, 0)
+		end
+
+		if dir.Magnitude > 0 then
+			bv.Velocity = dir.Unit * speed
+		else
+			bv.Velocity = Vector3.zero
+		end
+
+		-- Gyro always follows camera horizontal look
+		local flatLook = Vector3.new(cf.LookVector.X, 0, cf.LookVector.Z)
+		if flatLook.Magnitude > 0.01 then
+			bg.CFrame = CFrame.new(Vector3.zero, flatLook)
+		end
 	end)
 end
 
--- ============================================================
--- NOCLIP
--- ============================================================
-local function StopNc()
-    -- إرجاع التصادم للأجزاء (Restores collision)
-	Cfg.NcOn=false;if NcConn then NcConn:Disconnect();NcConn=nil end
-	local c=Char();if not c then return end
-	for _,p in pairs(c:GetDescendants()) do if p:IsA("BasePart") then pcall(function()p.CanCollide=true end)end end
-end
+-- Restart fly if character respawns while fly is "on"
+LocalPlayer.CharacterAdded:Connect(function()
+	local wasFlying   = Config.FlyEnabled
+	local wasNoClip   = Config.NoClipEnabled
 
-local function StartNc()
-    -- تفعيل المشي عبر الجدران عبر Stepped (Enables NoClip via Stepped)
-	Cfg.NcOn=true
-	NcConn=RunService.Stepped:Connect(function()
-		if not Cfg.NcOn then StopNc();return end
-		local c=Char();if not c then return end
-		for _,p in pairs(c:GetDescendants()) do if p:IsA("BasePart") then pcall(function()p.CanCollide=false end)end end
-	end)
-end
+	Config.FlyEnabled    = false
+	Config.NoClipEnabled = false
+	FlyConn    = nil
+	NoClipConn = nil
 
--- ============================================================
--- NEW FEATURES (God Mode, Inf Jump, Auto Clicker, Aimbot)
--- ============================================================
+	-- Wait for character to fully load
+	task.wait(0.5)
 
--- وضع عدم الموت (God Mode)
-local function ToggleGodMode(v)
-    Cfg.GodMode = v
-    if v then
-        GodConn = RunService.Heartbeat:Connect(function()
-            local h = Hum()
-            if h then h.Health = 100 end
-        end)
-    else
-        if GodConn then GodConn:Disconnect(); GodConn = nil end
-    end
-end
-
--- القفز اللانهائي (Infinite Jump)
-local function ToggleInfJump(v)
-    Cfg.InfJump = v
-    if v then
-        InfJumpConn = UserInputService.JumpRequest:Connect(function()
-            local h = Hum()
-            if h then h:ChangeState(Enum.HumanoidStateType.Jumping) end
-        end)
-    else
-        if InfJumpConn then InfJumpConn:Disconnect(); InfJumpConn = nil end
-    end
-end
-
--- النقر التلقائي (Auto Clicker)
-local function ToggleAutoClicker(v)
-    Cfg.AutoClicker = v
-    if v then
-        task.spawn(function()
-            while Cfg.AutoClicker do
-                if VirtualUser then
-                    VirtualUser:Button1Down(Vector2.new(0,0), Camera.CFrame)
-                    task.wait()
-                    VirtualUser:Button1Up(Vector2.new(0,0), Camera.CFrame)
-                end
-                task.wait(0.1)
-            end
-        end)
-    end
-end
-
--- الانتقال لمكان الماوس (Teleport to Mouse)
-UserInputService.InputBegan:Connect(function(input, processed)
-    if not processed and input.KeyCode == Enum.KeyCode.B then
-        local mouse = LP:GetMouse()
-        local hrp = HRP()
-        if hrp and mouse.Hit then
-            hrp.CFrame = CFrame.new(mouse.Hit.Position + Vector3.new(0,3,0))
-        end
-    end
+	if wasFlying then
+		StartFly()
+	end
+	if wasNoClip then
+		StartNoClip()
+	end
 end)
 
--- ايمبوت تلقائي (Simple Aimbot)
-local function ToggleAimbot(v)
-    Cfg.Aimbot = v
-    if v then
-        AimbotConn = RunService.RenderStepped:Connect(function()
-            local myHrp = HRP()
-            if not myHrp then return end
-            local dist = 1000
-            local target = nil
-            for _, p in pairs(Players:GetPlayers()) do
-                if p ~= LP and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-                    local d = (myHrp.Position - p.Character.HumanoidRootPart.Position).Magnitude
-                    if d < dist then
-                        dist = d
-                        target = p.Character.HumanoidRootPart
-                    end
-                end
-            end
-            if target then
-                Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Position)
-            end
-        end)
-    else
-        if AimbotConn then AimbotConn:Disconnect(); AimbotConn = nil end
-    end
-end
-
--- قتل الجميع (Kill All) - يعمل في الألعاب ذات الحماية الضعيفة أو Reset
-local function KillAllPlayers()
-    for _, p in pairs(Players:GetPlayers()) do
-        if p ~= LP and p.Character then
-            local h = p.Character:FindFirstChildOfClass("Humanoid")
-            if h then 
-                -- محاولة القتل (تعمل فقط إذا كانت اللعبة تسمح بالوصول لصحة الآخرين محلياً)
-                pcall(function() h.Health = 0 end) 
-            end
-        end
-    end
-end
-
 -- ============================================================
--- INVISIBILITY
+-- NOCLIP SYSTEM
 -- ============================================================
-local function SetInvis(v)
-	Cfg.InvisOn=v;local c=Char();if not c then return end
-	pcall(function()
-		local h=c:FindFirstChildOfClass("Humanoid")
-		if h then h.DisplayDistanceType=v and Enum.HumanoidDisplayDistanceType.None or Enum.HumanoidDisplayDistanceType.Viewer end
-		for _,p in pairs(c:GetDescendants()) do
-			if p:IsA("BasePart") and p.Name~="HumanoidRootPart" then p.LocalTransparencyModifier=v and 1 or 0 end
-			if p:IsA("Decal") then p.Transparency=v and 1 or 0 end
+
+local function StopNoClip()
+	Config.NoClipEnabled = false
+	if NoClipConn then NoClipConn:Disconnect() NoClipConn = nil end
+	local c = GetCharacter()
+	if c then
+		for _, p in pairs(c:GetDescendants()) do
+			if p:IsA("BasePart") then
+				pcall(function() p.CanCollide = true end)
+			end
 		end
-		local hr=c:FindFirstChild("HumanoidRootPart");if hr then hr.LocalTransparencyModifier=1 end
-	end)
+	end
 end
 
--- ============================================================
--- COPY OUTFIT
--- ============================================================
-local function CopyOutfit(name)
-	local tp=Players:FindFirstChild(name);if not tp then return end
-	local tc=tp.Character;if not tc then return end
-	pcall(function()
-		local th=tc:FindFirstChildOfClass("Humanoid");local mh=Hum()
-		if th and mh then local desc=th:GetAppliedDescription();task.wait(0.1);pcall(function()mh:ApplyDescription(desc)end)end
-	end)
-end
-
--- ============================================================
--- TIME WARP
--- ============================================================
-local function StopTime()
-	Cfg.TimeOn=false;if TimeConn then TimeConn:Disconnect();TimeConn=nil end
-end
-local function StartTime(spd)
-	StopTime();Cfg.TimeOn=true
-	TimeConn=RunService.Heartbeat:Connect(function(dt)
-		if not Cfg.TimeOn then StopTime();return end
-		pcall(function()Lighting.ClockTime=(Lighting.ClockTime+dt*spd)%24 end)
-	end)
-end
-
--- ============================================================
--- AURA ZONE
--- ============================================================
-local function StopAura()
-	Cfg.AuraOn=false;AuraActive=false
-	if AuraConn then AuraConn:Disconnect();AuraConn=nil end
-	if Cfg.TimeOn then StartTime(Cfg.TimeSpeed) end
-	if AuraLbl then pcall(function()AuraLbl.Text=T("auraOff");AuraLbl.TextColor3=Color3.fromRGB(115,105,165)end)end
-end
-local function StartAura(nm)
-	StopAura();Cfg.AuraOn=true;nm=(nm and nm~="")and nm or "AuraZone"
-	AuraConn=RunService.Heartbeat:Connect(function()
-		local hr=HRP();if not hr then return end
-		local z=Workspace:FindFirstChild(nm,true)
-		if not z or not z:IsA("BasePart") then
-			if AuraLbl then pcall(function()AuraLbl.Text="⚠ '"..nm.."' غير موجود";AuraLbl.TextColor3=Color3.fromRGB(235,60,80)end)end;return
-		end
-		local zp=z.Position;local zs=z.Size/2;local pp=hr.Position
-		local inside=math.abs(pp.X-zp.X)<zs.X and math.abs(pp.Y-zp.Y)<zs.Y+4 and math.abs(pp.Z-zp.Z)<zs.Z
-		if inside and not AuraActive then
-			AuraActive=true;StartTime(Cfg.TimeSpeed*10)
-			if AuraLbl then pcall(function()AuraLbl.Text=T("auraOn");AuraLbl.TextColor3=Color3.fromRGB(255,200,0)end)end
-		elseif not inside and AuraActive then
-			AuraActive=false;StartTime(Cfg.TimeSpeed)
-			if AuraLbl then pcall(function()AuraLbl.Text=T("auraOff");AuraLbl.TextColor3=Color3.fromRGB(115,105,165)end)end
+function StartNoClip()
+	Config.NoClipEnabled = true
+	NoClipConn = RunService.Stepped:Connect(function()
+		if not Config.NoClipEnabled then StopNoClip() return end
+		local c = GetCharacter()
+		if c then
+			for _, p in pairs(c:GetDescendants()) do
+				if p:IsA("BasePart") then
+					pcall(function() p.CanCollide = false end)
+				end
+			end
 		end
 	end)
 end
 
+-- ============================================================
 -- CHECKPOINTS
-local function SaveCP(i) local h=HRP();if h then CP[i]=h.CFrame end end
-local function LoadCP(i) local cf=CP[i];local h=HRP();if cf and h then pcall(function()h.CFrame=cf end)end end
+-- ============================================================
 
--- PLAYERS
-local function FindP(n) n=n:lower();for _,p in pairs(Players:GetPlayers()) do if p.Name:lower():find(n,1,true) then return p end end end
-local function TpTo(t) local h=HRP();local tc=t.Character;local th=tc and tc:FindFirstChild("HumanoidRootPart");if h and th then h.CFrame=th.CFrame+Vector3.new(3,0,0)end end
-local FollowTgt=nil
-local function StopFollow() if FollowConn then FollowConn:Disconnect();FollowConn=nil end;FollowTgt=nil end
-local function StartFollow(t)
-	StopFollow();FollowTgt=t
-	FollowConn=RunService.Heartbeat:Connect(function()
-		local h=HRP();local tc=FollowTgt and FollowTgt.Character;local th=tc and tc:FindFirstChild("HumanoidRootPart")
-		if h and th then h.CFrame=th.CFrame+th.CFrame.LookVector*-3 end
+local function SaveCheckpoint(slot)
+	local hrp = GetHRP()
+	if hrp then Checkpoints[slot] = hrp.CFrame end
+end
+
+local function LoadCheckpoint(slot)
+	local cf  = Checkpoints[slot]
+	local hrp = GetHRP()
+	if cf and hrp then hrp.CFrame = cf end
+end
+
+-- ============================================================
+-- PLAYER TOOLS
+-- ============================================================
+
+local function GetPlayerByName(name)
+	name = name:lower()
+	for _, p in pairs(Players:GetPlayers()) do
+		if p.Name:lower():find(name) then return p end
+	end
+end
+
+local function TeleportToPlayer(target)
+	local hrp  = GetHRP()
+	local tc   = target.Character
+	local thrp = tc and tc:FindFirstChild("HumanoidRootPart")
+	if hrp and thrp then
+		hrp.CFrame = thrp.CFrame + Vector3.new(3, 0, 0)
+	end
+end
+
+local function StopFollow()
+	if FollowConn then FollowConn:Disconnect() FollowConn = nil end
+	FollowTarget = nil
+end
+
+local function StartFollow(target)
+	StopFollow()
+	FollowTarget = target
+	FollowConn = RunService.Heartbeat:Connect(function()
+		local hrp  = GetHRP()
+		local tc   = FollowTarget and FollowTarget.Character
+		local thrp = tc and tc:FindFirstChild("HumanoidRootPart")
+		if hrp and thrp then
+			hrp.CFrame = thrp.CFrame + thrp.CFrame.LookVector * -3
+		end
 	end)
 end
-local SpecTgt=nil
-local function StopSpec() if SpectateConn then SpectateConn:Disconnect();SpectateConn=nil end;SpecTgt=nil;Camera.CameraType=Enum.CameraType.Custom;Camera.CameraSubject=Hum() end
-local function StartSpec(t)
-    -- تتبع كاميرا اللاعب المختار (Spectates target player)
-	StopSpec();SpecTgt=t;Camera.CameraType=Enum.CameraType.Custom
-	SpectateConn=RunService.RenderStepped:Connect(function()
-		local tc=SpecTgt and SpecTgt.Character;local th=tc and tc:FindFirstChildOfClass("Humanoid")
-		if th then Camera.CameraSubject=th end
+
+local function StopSpectate()
+	if SpectateConn then SpectateConn:Disconnect() SpectateConn = nil end
+	SpectateTarget = nil
+	Camera.CameraType = Enum.CameraType.Custom
+	Camera.CameraSubject = GetHumanoid()
+end
+
+local function StartSpectate(target)
+	StopSpectate()
+	SpectateTarget = target
+	Camera.CameraType = Enum.CameraType.Custom
+	SpectateConn = RunService.RenderStepped:Connect(function()
+		local tc = SpectateTarget and SpectateTarget.Character
+		local th = tc and tc:FindFirstChildOfClass("Humanoid")
+		if th then
+			Camera.CameraSubject = th
+		end
 	end)
+end
+
+-- ============================================================
+-- ESP SYSTEM
+-- ============================================================
+
+local function ClearESP()
+	for _, v in pairs(ESPObjects) do pcall(function() v:Destroy() end) end
+	ESPObjects = {}
 end
 
 local function BuildESP()
 	ClearESP()
-	for _,p in pairs(Players:GetPlayers()) do
-		if p~=LP then
-			local bb=Instance.new("BillboardGui");bb.Name="TESP";bb.AlwaysOnTop=true;bb.Size=UDim2.new(0,120,0,42);bb.StudsOffset=Vector3.new(0,3,0)
-			local bg=Instance.new("Frame");bg.Size=UDim2.fromScale(1,1);bg.BackgroundColor3=Color3.fromRGB(6,4,20);bg.BackgroundTransparency=0.25;bg.Parent=bb
-			local uc=Instance.new("UICorner");uc.CornerRadius=UDim.new(0,8);uc.Parent=bg
-			local us=Instance.new("UIStroke");us.Color=Color3.fromRGB(120,60,255);us.Thickness=1.5;us.Parent=bg
-			local lbl=Instance.new("TextLabel");lbl.Size=UDim2.fromScale(1,1);lbl.BackgroundTransparency=1;lbl.Font=Enum.Font.GothamBold;lbl.TextColor3=Color3.fromRGB(190,150,255);lbl.TextSize=13;lbl.Parent=bg
-			-- استخدام RenderStepped لجعل الرادار سلساً جداً
-			local conn=RunService.RenderStepped:Connect(function()
-				local c=p.Character;local hr=c and c:FindFirstChild("HumanoidRootPart");local lh=HRP()
-				if hr and lh then lbl.Text=p.Name.."\n"..math.floor((hr.Position-lh.Position).Magnitude).."m";bb.Adornee=hr;bb.Parent=Workspace
-				else bb.Parent=nil end
-			end)
-			table.insert(ESPObjs,bb);table.insert(ESPObjs,{Disconnect=function()conn:Disconnect()end})
+	for _, p in pairs(Players:GetPlayers()) do
+		if p ~= LocalPlayer then
+			local bb = Instance.new("BillboardGui")
+			bb.Name       = "AdminESP"
+			bb.AlwaysOnTop= true
+			bb.Size        = UDim2.new(0, 110, 0, 36)
+			bb.StudsOffset = Vector3.new(0, 3, 0)
+
+			local lbl = Instance.new("TextLabel")
+			lbl.BackgroundColor3       = Color3.fromRGB(10, 10, 30)
+			lbl.BackgroundTransparency = 0.4
+			lbl.Size                   = UDim2.fromScale(1, 1)
+			lbl.Font                   = Enum.Font.GothamBold
+			lbl.TextColor3             = Color3.fromRGB(140, 100, 255)
+			lbl.TextSize               = 12
+			lbl.Parent                 = bb
+
+			local corner = Instance.new("UICorner")
+			corner.CornerRadius = UDim.new(0, 6)
+			corner.Parent = lbl
+
+			local function UpdateESP()
+				local c  = p.Character
+				local hr = c and c:FindFirstChild("HumanoidRootPart")
+				local lh = GetHRP()
+				if hr and lh then
+					local dist = math.floor((hr.Position - lh.Position).Magnitude)
+					lbl.Text   = p.Name .. "\n" .. dist .. " studs"
+					bb.Adornee = hr
+					bb.Parent  = Workspace
+				else
+					bb.Parent = nil
+				end
+			end
+
+			local conn = RunService.Heartbeat:Connect(UpdateESP)
+			table.insert(ESPObjects, bb)
+			table.insert(ESPObjects, {Disconnect = function() conn:Disconnect() end})
 		end
 	end
 end
-local function TogESP(v) Cfg.ESPOn=v;if v then BuildESP()else ClearESP()end end
 
--- MUSIC
-local function PlayM(id,vol) if ActiveMusic then ActiveMusic:Destroy();ActiveMusic=nil end;local s=Instance.new("Sound");s.SoundId="rbxassetid://"..tostring(id);s.Volume=vol or Cfg.MusicVol;s.Looped=true;s.Parent=SoundService;s:Play();ActiveMusic=s end
-local function StopM() if ActiveMusic then ActiveMusic:Stop();ActiveMusic:Destroy();ActiveMusic=nil end end
-
--- Respawn
-LP.CharacterAdded:Connect(function()
-    task.wait(0.5)
-    if Cfg.FlyOn then StartFly() end
-    if Cfg.NcOn then StartNc() end
-    if Cfg.InvisOn then SetInvis(true) end
-    if Cfg.TimeOn then StartTime(Cfg.TimeSpeed) end
-    if Cfg.GodMode then ToggleGodMode(true) end
-    if Cfg.InfJump then ToggleInfJump(true) end
-end)
+local function UpdateESPState()
+	if Config.ESPEnabled then BuildESP() else ClearESP() end
+end
 
 -- ============================================================
--- ====  الواجهة  ====
+-- MUSIC SYSTEM
 -- ============================================================
-local old=LP.PlayerGui:FindFirstChild("ThaerX100")
+
+local function PlayMusic(id, vol)
+	if ActiveMusic then ActiveMusic:Destroy() ActiveMusic = nil end
+	local s = Instance.new("Sound")
+	s.SoundId = "rbxassetid://" .. tostring(id)
+	s.Volume  = vol or Config.MusicVolume
+	s.Looped  = true
+	s.Parent  = SoundService
+	s:Play()
+	ActiveMusic = s
+end
+
+local function StopMusic()
+	if ActiveMusic then ActiveMusic:Stop() ActiveMusic:Destroy() ActiveMusic = nil end
+end
+
+-- ============================================================
+-- GUI BUILDING
+-- ============================================================
+
+local old = LocalPlayer.PlayerGui:FindFirstChild("ThaerAdminUI")
 if old then old:Destroy() end
-local SG=Instance.new("ScreenGui")
-SG.Name="ThaerX100";SG.ResetOnSpawn=false;SG.ZIndexBehavior=Enum.ZIndexBehavior.Sibling
-SG.IgnoreGuiInset=true;SG.Parent=LP.PlayerGui
 
--- ألوان الثيم الداكن (Dark Theme Colors)
-local C={
-	BG=Color3.fromRGB(8,9,22),Panel=Color3.fromRGB(12,13,32),
-	Side=Color3.fromRGB(9,10,26),Card=Color3.fromRGB(16,18,44),
-	Acc=Color3.fromRGB(115,55,252),AccB=Color3.fromRGB(55,125,255),AccC=Color3.fromRGB(205,75,255),
-	Txt=Color3.fromRGB(225,220,255),Sub=Color3.fromRGB(115,105,165),
-	OK=Color3.fromRGB(45,215,135),Err=Color3.fromRGB(235,60,80),Warn=Color3.fromRGB(255,190,0),
-	TOn=Color3.fromRGB(115,55,252),TOff=Color3.fromRGB(32,32,60),W=Color3.fromRGB(255,255,255),
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name           = "ThaerAdminUI"
+ScreenGui.ResetOnSpawn   = false
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.IgnoreGuiInset = true
+ScreenGui.Parent         = LocalPlayer.PlayerGui
+
+-- ============================================================
+-- COLOR PALETTE
+-- ============================================================
+
+local C = {
+	BG        = Color3.fromRGB(8,   10,  22),
+	Panel     = Color3.fromRGB(14,  16,  36),
+	Sidebar   = Color3.fromRGB(10,  12,  28),
+	Card      = Color3.fromRGB(18,  20,  46),
+	Accent    = Color3.fromRGB(110, 60,  240),
+	AccentB   = Color3.fromRGB(60,  120, 255),
+	Text      = Color3.fromRGB(220, 220, 255),
+	SubText   = Color3.fromRGB(120, 110, 170),
+	Success   = Color3.fromRGB(60,  210, 140),
+	Danger    = Color3.fromRGB(230, 70,  90),
+	Toggle_On = Color3.fromRGB(110, 60,  240),
+	Toggle_Off= Color3.fromRGB(40,  40,  70),
+	White     = Color3.fromRGB(255, 255, 255),
 }
 
--- أبعاد متجاوبة مع الشاشة (Responsive UI Dimensions)
-local Viewport = Camera.ViewportSize
-local IsLandscape = Viewport.X > Viewport.Y
+-- ============================================================
+-- UI COMPONENT FUNCTIONS
+-- ============================================================
 
-local PW, PH
-if IsMob then
-    -- إعدادات الهاتف: العرض والطول يتغيران بناءً على تدوير الجهاز
-    if IsLandscape then
-        PW = math.floor(Viewport.X * 0.65) -- عرض أقل في الوضع الأفقي لترك مساحة رؤية
-        PH = math.floor(Viewport.Y * 0.85) -- استغلال أغلب الطول المتاح
-    else
-        PW = math.floor(Viewport.X * 0.85)
-        PH = math.floor(Viewport.Y * 0.60)
-    end
-    BH=40;TH=40;SH=58;IH=38;FS=12
-else
-    PW = math.floor(Viewport.X * 0.8)
-    PH = math.floor(Viewport.Y * 0.5)
-    if PW > 650 then PW = 650 end
-    if PH > 480 then PH = 480 end
+local function AddCorner(parent, radius)
+	local c = Instance.new("UICorner")
+	c.CornerRadius = UDim.new(0, radius or 8)
+	c.Parent = parent
+	return c
 end
 
-local SW = 75   -- عرض الشريط الجانبي (Fixed Sidebar)
-local BH = 34   -- ارتفاع الأزرار
-local TH = 34   -- ارتفاع التبديل
-local SH = 52   -- ارتفاع السلايدر
-local IH = 32   -- ارتفاع حقل النص
-local FS = 12   -- حجم الخط
-
--- helpers
-local function Cor(p,r) local c=Instance.new("UICorner");c.CornerRadius=UDim.new(0,r or 8);c.Parent=p;return c end
-local function Str(p,col,th) local s=Instance.new("UIStroke");s.Color=col or C.Acc;s.Thickness=th or 1.2;s.Parent=p;return s end
-local function Grd(p,c0,c1,rot) local g=Instance.new("UIGradient");g.Color=ColorSequence.new(c0,c1);g.Rotation=rot or 90;g.Parent=p;return g end
-local function LL(p,pad,dir,ha,va)
-	local l=Instance.new("UIListLayout");l.Padding=UDim.new(0,pad or 5)
-	l.FillDirection=dir or Enum.FillDirection.Vertical
-	l.HorizontalAlignment=ha or Enum.HorizontalAlignment.Center
-	l.VerticalAlignment=va or Enum.VerticalAlignment.Top
-	l.SortOrder=Enum.SortOrder.LayoutOrder;l.Parent=p;return l
-end
-local function Pd(p,t,b,l,r)
-	local pd=Instance.new("UIPadding");pd.PaddingTop=UDim.new(0,t or 6);pd.PaddingBottom=UDim.new(0,b or 6)
-	pd.PaddingLeft=UDim.new(0,l or 6);pd.PaddingRight=UDim.new(0,r or 6);pd.Parent=p;return pd
+local function AddStroke(parent, color, thickness)
+	local s = Instance.new("UIStroke")
+	s.Color     = color or C.Accent
+	s.Thickness = thickness or 1.2
+	s.Parent    = parent
+	return s
 end
 
-local function SecH(p,txt,ord)
-	local f=Instance.new("Frame");f.Size=UDim2.new(1,0,0,20);f.BackgroundTransparency=1;f.LayoutOrder=ord or 0;f.Parent=p
-	local line=Instance.new("Frame");line.Size=UDim2.new(1,0,0,1);line.Position=UDim2.new(0,0,1,-1);line.BackgroundColor3=C.Acc;line.BackgroundTransparency=0.65;line.BorderSizePixel=0;line.Parent=f
-	Grd(line,C.Acc,Color3.fromRGB(8,9,22),0)
-	local lbl=Instance.new("TextLabel");lbl.Size=UDim2.fromScale(1,1);lbl.BackgroundTransparency=1;lbl.Font=Enum.Font.GothamBold;lbl.TextSize=9;lbl.Text="▸  "..txt:upper();lbl.TextColor3=C.Acc;lbl.TextXAlignment=Enum.TextXAlignment.Left;lbl.Parent=f
-	return f,lbl
+local function AddGradient(parent, c0, c1, rotation)
+	local g = Instance.new("UIGradient")
+	g.Color    = ColorSequence.new(c0 or C.Accent, c1 or C.AccentB)
+	g.Rotation = rotation or 90
+	g.Parent   = parent
+	return g
 end
 
-local function PgH(p,tk,sk,ord)
-	local f=Instance.new("Frame");f.Size=UDim2.new(1,0,0,50);f.BackgroundColor3=C.Card;f.LayoutOrder=ord or 0;f.Parent=p;Cor(f,10);Str(f,C.Acc,1)
-	Grd(f,Color3.fromRGB(24,8,70),Color3.fromRGB(6,18,62),140)
-	local t=Instance.new("TextLabel");t.Position=UDim2.new(0,12,0,8);t.Size=UDim2.new(.9,0,0,20);t.BackgroundTransparency=1;t.Font=Enum.Font.GothamBold;t.Text=T(tk);t.TextColor3=C.W;t.TextSize=14;t.TextXAlignment=Enum.TextXAlignment.Left;t.Parent=f
-	local s=Instance.new("TextLabel");s.Position=UDim2.new(0,12,0,29);s.Size=UDim2.new(.9,0,0,14);s.BackgroundTransparency=1;s.Font=Enum.Font.Gotham;s.Text=T(sk);s.TextColor3=C.Sub;s.TextSize=10;s.TextXAlignment=Enum.TextXAlignment.Left;s.Parent=f
-	return f,t,s
+local function AddListLayout(parent, padding, direction, halign, valign)
+	local l = Instance.new("UIListLayout")
+	l.Padding             = UDim.new(0, padding or 6)
+	l.FillDirection       = direction or Enum.FillDirection.Vertical
+	l.HorizontalAlignment = halign or Enum.HorizontalAlignment.Center
+	l.VerticalAlignment   = valign or Enum.VerticalAlignment.Top
+	l.SortOrder           = Enum.SortOrder.LayoutOrder
+	l.Parent              = parent
+	return l
 end
 
-local function Btn(p,key,col,ord,cb)
-	col=col or C.Acc
-	local b=Instance.new("TextButton");b.Size=UDim2.new(1,0,0,BH);b.BackgroundColor3=col;b.Font=Enum.Font.GothamBold;b.Text=T(key);b.TextColor3=C.W;b.TextSize=FS;b.AutoButtonColor=false;b.LayoutOrder=ord or 0;b.Parent=p;Cor(b,7)
-	local gs=Str(b,col,0)
-	b.MouseEnter:Connect(function()Tw(b,{BackgroundColor3=col:Lerp(C.W,.18)},.12);Tw(gs,{Thickness=2},.12)end)
-	b.MouseLeave:Connect(function()Tw(b,{BackgroundColor3=col},.12);Tw(gs,{Thickness=0},.12)end)
-	local function fire()Tw(b,{Size=UDim2.new(.95,0,0,BH-2)},.07);task.delay(.07,function()Tw(b,{Size=UDim2.new(1,0,0,BH)},.1)end);if cb then cb()end end
-	b.MouseButton1Click:Connect(fire);b.TouchTap:Connect(fire)
-	return b
+local function AddPadding(parent, top, bottom, left, right)
+	local p = Instance.new("UIPadding")
+	p.PaddingTop    = UDim.new(0, top    or 6)
+	p.PaddingBottom = UDim.new(0, bottom or 6)
+	p.PaddingLeft   = UDim.new(0, left   or 6)
+	p.PaddingRight  = UDim.new(0, right  or 6)
+	p.Parent        = parent
+	return p
 end
 
-local function Tog(p,key,state,ord,cb)
-	local f=Instance.new("Frame");f.Size=UDim2.new(1,0,0,TH);f.BackgroundColor3=C.Card;f.LayoutOrder=ord or 0;f.Parent=p;Cor(f,7);Str(f,C.Acc,1)
-	local lbl=Instance.new("TextLabel");lbl.Position=UDim2.new(0,10,0,0);lbl.Size=UDim2.new(1,-58,1,0);lbl.BackgroundTransparency=1;lbl.Font=Enum.Font.Gotham;lbl.Text=T(key);lbl.TextColor3=C.Txt;lbl.TextSize=FS;lbl.TextXAlignment=Enum.TextXAlignment.Left;lbl.Parent=f
-	local trk=Instance.new("Frame");trk.Position=UDim2.new(1,-50,0.5,-10);trk.Size=UDim2.new(0,40,0,20);trk.BackgroundColor3=state and C.TOn or C.TOff;trk.Parent=f;Cor(trk,10)
-	local knob=Instance.new("Frame");knob.Position=state and UDim2.new(1,-19,0.5,-8) or UDim2.new(0,2,0.5,-8);knob.Size=UDim2.new(0,17,0,17);knob.BackgroundColor3=C.W;knob.Parent=trk;Cor(knob,9)
-	local cur=state or false
-	local function SetS(v)
-		cur=v;Tw(trk,{BackgroundColor3=v and C.TOn or C.TOff},.18)
-		Tw(knob,{Position=v and UDim2.new(1,-19,0.5,-8) or UDim2.new(0,2,0.5,-8)},.18)
+local function MakeSectionLabel(parent, text, order)
+	local f = Instance.new("Frame")
+	f.Size                = UDim2.new(0.97, 0, 0, 18)
+	f.BackgroundTransparency = 1
+	f.LayoutOrder         = order or 0
+	f.Parent              = parent
+
+	local lbl = Instance.new("TextLabel")
+	lbl.Size              = UDim2.fromScale(1, 1)
+	lbl.BackgroundTransparency = 1
+	lbl.Font              = Enum.Font.GothamBold
+	lbl.Text              = "▸  " .. text:upper()
+	lbl.TextColor3        = C.Accent
+	lbl.TextSize          = 10
+	lbl.TextXAlignment    = GetTextAlign()
+	lbl.Parent            = f
+	return f, lbl
+end
+
+local function MakePageHeader(parent, titleKey, subtitleKey, order)
+	local f = Instance.new("Frame")
+	f.Size            = UDim2.new(0.97, 0, 0, 50)
+	f.BackgroundColor3= C.Card
+	f.LayoutOrder     = order or 0
+	f.Parent          = parent
+	AddCorner(f, 10)
+	AddStroke(f, C.Accent, 1)
+
+	local grad = Instance.new("UIGradient")
+	grad.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(30, 15, 80)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 30, 80)),
+	})
+	grad.Rotation = 135
+	grad.Parent   = f
+
+	local t = Instance.new("TextLabel")
+	t.Position        = UDim2.new(0, 12, 0, 7)
+	t.Size            = UDim2.new(1, -12, 0, 20)
+	t.BackgroundTransparency = 1
+	t.Font            = Enum.Font.GothamBold
+	t.Text            = T(titleKey)
+	t.TextColor3      = C.White
+	t.TextSize        = 15
+	t.TextXAlignment  = GetTextAlign()
+	t.Parent          = f
+
+	local s = Instance.new("TextLabel")
+	s.Position        = UDim2.new(0, 12, 0, 29)
+	s.Size            = UDim2.new(1, -12, 0, 14)
+	s.BackgroundTransparency = 1
+	s.Font            = Enum.Font.Gotham
+	s.Text            = T(subtitleKey)
+	s.TextColor3      = C.SubText
+	s.TextSize        = 10
+	s.TextXAlignment  = GetTextAlign()
+	s.Parent          = f
+	return f, t, s
+end
+
+local function MakeButton(parent, textKey, color, order, callback)
+	color = color or C.Accent
+	local btn = Instance.new("TextButton")
+	btn.Size             = UDim2.new(0.97, 0, 0, 34)
+	btn.BackgroundColor3 = color
+	btn.Font             = Enum.Font.GothamBold
+	btn.Text             = T(textKey)
+	btn.TextColor3       = C.White
+	btn.TextSize         = 12
+	btn.AutoButtonColor  = false
+	btn.LayoutOrder      = order or 0
+	btn.Parent           = parent
+	AddCorner(btn, 7)
+	AddStroke(btn, color, 1)
+
+	btn.MouseEnter:Connect(function()
+		Tween(btn, {BackgroundColor3 = color:Lerp(Color3.fromRGB(255,255,255), 0.15)}, 0.15)
+	end)
+	btn.MouseLeave:Connect(function()
+		Tween(btn, {BackgroundColor3 = color}, 0.15)
+	end)
+	btn.MouseButton1Click:Connect(function()
+		Tween(btn, {Size = UDim2.new(0.93, 0, 0, 31)}, 0.07)
+		task.delay(0.07, function() Tween(btn, {Size = UDim2.new(0.97, 0, 0, 34)}, 0.1) end)
+		if callback then callback() end
+	end)
+	return btn
+end
+
+-- Raw text version of MakeButton (for non-key strings)
+local function MakeButtonRaw(parent, text, color, order, callback)
+	color = color or C.Accent
+	local btn = Instance.new("TextButton")
+	btn.Size             = UDim2.new(0.97, 0, 0, 34)
+	btn.BackgroundColor3 = color
+	btn.Font             = Enum.Font.GothamBold
+	btn.Text             = text
+	btn.TextColor3       = C.White
+	btn.TextSize         = 12
+	btn.AutoButtonColor  = false
+	btn.LayoutOrder      = order or 0
+	btn.Parent           = parent
+	AddCorner(btn, 7)
+	AddStroke(btn, color, 1)
+
+	btn.MouseEnter:Connect(function()
+		Tween(btn, {BackgroundColor3 = color:Lerp(Color3.fromRGB(255,255,255), 0.15)}, 0.15)
+	end)
+	btn.MouseLeave:Connect(function()
+		Tween(btn, {BackgroundColor3 = color}, 0.15)
+	end)
+	btn.MouseButton1Click:Connect(function()
+		Tween(btn, {Size = UDim2.new(0.93, 0, 0, 31)}, 0.07)
+		task.delay(0.07, function() Tween(btn, {Size = UDim2.new(0.97, 0, 0, 34)}, 0.1) end)
+		if callback then callback() end
+	end)
+	return btn
+end
+
+local function MakeToggle(parent, textKey, state, order, callback)
+	local frame = Instance.new("Frame")
+	frame.Size             = UDim2.new(0.97, 0, 0, 34)
+	frame.BackgroundColor3 = C.Card
+	frame.LayoutOrder      = order or 0
+	frame.Parent           = parent
+	AddCorner(frame, 7)
+	AddStroke(frame, C.Accent, 1)
+
+	local lbl = Instance.new("TextLabel")
+	lbl.Position         = UDim2.new(0, 10, 0, 0)
+	lbl.Size             = UDim2.new(1, -64, 1, 0)
+	lbl.BackgroundTransparency = 1
+	lbl.Font             = Enum.Font.Gotham
+	lbl.Text             = T(textKey)
+	lbl.TextColor3       = C.Text
+	lbl.TextSize         = 12
+	lbl.TextXAlignment   = GetTextAlign()
+	lbl.Parent           = frame
+
+	local track = Instance.new("Frame")
+	track.Position       = UDim2.new(1, -48, 0.5, -9)
+	track.Size           = UDim2.new(0, 38, 0, 18)
+	track.BackgroundColor3 = state and C.Toggle_On or C.Toggle_Off
+	track.Parent         = frame
+	AddCorner(track, 9)
+
+	local knob = Instance.new("Frame")
+	knob.Position        = state and UDim2.new(1, -17, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)
+	knob.Size            = UDim2.new(0, 15, 0, 15)
+	knob.BackgroundColor3= C.White
+	knob.Parent          = track
+	AddCorner(knob, 8)
+
+	local current = state or false
+	local btn = Instance.new("TextButton")
+	btn.Size               = UDim2.fromScale(1, 1)
+	btn.BackgroundTransparency = 1
+	btn.Text               = ""
+	btn.Parent             = frame
+
+	btn.MouseButton1Click:Connect(function()
+		current = not current
+		Tween(track, {BackgroundColor3 = current and C.Toggle_On or C.Toggle_Off}, 0.2)
+		Tween(knob, {Position = current and UDim2.new(1,-17,0.5,-7) or UDim2.new(0,2,0.5,-7)}, 0.2)
+		if callback then callback(current) end
+	end)
+
+	return frame, function(v)
+		current = v
+		Tween(track, {BackgroundColor3 = v and C.Toggle_On or C.Toggle_Off}, 0.2)
+		Tween(knob, {Position = v and UDim2.new(1,-17,0.5,-7) or UDim2.new(0,2,0.5,-7)}, 0.2)
+	end, lbl
+end
+
+local function MakeSlider(parent, textKey, min, max, value, order, callback)
+	local frame = Instance.new("Frame")
+	frame.Size             = UDim2.new(0.97, 0, 0, 52)
+	frame.BackgroundColor3 = C.Card
+	frame.LayoutOrder      = order or 0
+	frame.Parent           = parent
+	AddCorner(frame, 7)
+	AddStroke(frame, C.Accent, 1)
+
+	local lbl = Instance.new("TextLabel")
+	lbl.Position           = UDim2.new(0, 10, 0, 5)
+	lbl.Size               = UDim2.new(0.6, 0, 0, 17)
+	lbl.BackgroundTransparency = 1
+	lbl.Font               = Enum.Font.Gotham
+	lbl.Text               = T(textKey)
+	lbl.TextColor3         = C.Text
+	lbl.TextSize           = 12
+	lbl.TextXAlignment     = GetTextAlign()
+	lbl.Parent             = frame
+
+	local valLbl = Instance.new("TextLabel")
+	valLbl.Position        = UDim2.new(0.6, 0, 0, 5)
+	valLbl.Size            = UDim2.new(0.37, 0, 0, 17)
+	valLbl.BackgroundTransparency = 1
+	valLbl.Font            = Enum.Font.GothamBold
+	valLbl.Text            = tostring(value)
+	valLbl.TextColor3      = C.Accent
+	valLbl.TextSize        = 12
+	valLbl.TextXAlignment  = Enum.TextXAlignment.Right
+	valLbl.Parent          = frame
+
+	local track = Instance.new("Frame")
+	track.Position         = UDim2.new(0, 10, 0, 30)
+	track.Size             = UDim2.new(1, -20, 0, 5)
+	track.BackgroundColor3 = C.Sidebar
+	track.Parent           = frame
+	AddCorner(track, 3)
+
+	local fill = Instance.new("Frame")
+	fill.Size              = UDim2.new((value - min) / (max - min), 0, 1, 0)
+	fill.BackgroundColor3  = C.Accent
+	fill.Parent            = track
+	AddCorner(fill, 3)
+
+	local knob = Instance.new("Frame")
+	knob.AnchorPoint       = Vector2.new(0.5, 0.5)
+	knob.Position          = UDim2.new((value - min)/(max - min), 0, 0.5, 0)
+	knob.Size              = UDim2.new(0, 12, 0, 12)
+	knob.BackgroundColor3  = C.White
+	knob.Parent            = track
+	AddCorner(knob, 6)
+
+	local dragging = false
+	local function Update(x)
+		local abs  = track.AbsolutePosition.X
+		local wid  = track.AbsoluteSize.X
+		local pct  = math.clamp((x - abs) / wid, 0, 1)
+		local val  = math.floor(min + pct * (max - min))
+		Tween(fill,  {Size = UDim2.new(pct, 0, 1, 0)}, 0.05)
+		Tween(knob,  {Position = UDim2.new(pct, 0, 0.5, 0)}, 0.05)
+		valLbl.Text = tostring(val)
+		if callback then callback(val) end
 	end
-	local hb=Instance.new("TextButton");hb.Size=UDim2.fromScale(1,1);hb.BackgroundTransparency=1;hb.Text="";hb.Parent=f
-	local function fire()SetS(not cur);if cb then cb(cur)end end
-	hb.MouseButton1Click:Connect(fire);hb.TouchTap:Connect(fire)
-	return f,SetS,lbl
-end
 
-local function Sldr(p,key,mn,mx,val,ord,cb)
-	local f=Instance.new("Frame");f.Size=UDim2.new(1,0,0,SH);f.BackgroundColor3=C.Card;f.LayoutOrder=ord or 0;f.Parent=p;Cor(f,7);Str(f,C.Acc,1)
-	local lbl=Instance.new("TextLabel");lbl.Position=UDim2.new(0,10,0,5);lbl.Size=UDim2.new(.6,0,0,16);lbl.BackgroundTransparency=1;lbl.Font=Enum.Font.Gotham;lbl.Text=T(key);lbl.TextColor3=C.Txt;lbl.TextSize=FS;lbl.TextXAlignment=Enum.TextXAlignment.Left;lbl.Parent=f
-	local vl=Instance.new("TextLabel");vl.Position=UDim2.new(.6,0,0,5);vl.Size=UDim2.new(.37,0,0,16);vl.BackgroundTransparency=1;vl.Font=Enum.Font.GothamBold;vl.Text=tostring(val);vl.TextColor3=C.Acc;vl.TextSize=FS;vl.TextXAlignment=Enum.TextXAlignment.Right;vl.Parent=f
-	local trk=Instance.new("Frame");trk.Position=UDim2.new(0,10,0,SH-18);trk.Size=UDim2.new(1,-20,0,6);trk.BackgroundColor3=C.Side;trk.Parent=f;Cor(trk,3)
-	local fill=Instance.new("Frame");fill.Size=UDim2.new((val-mn)/(mx-mn),0,1,0);fill.BackgroundColor3=C.Acc;fill.Parent=trk;Cor(fill,3);Grd(fill,C.AccB,C.AccC,0)
-	local knob=Instance.new("Frame");knob.AnchorPoint=Vector2.new(.5,.5);knob.Position=UDim2.new((val-mn)/(mx-mn),0,.5,0);knob.Size=UDim2.new(0,IsMob and 18 or 13,0,IsMob and 18 or 13);knob.BackgroundColor3=C.W;knob.Parent=trk;Cor(knob,9);Str(knob,C.Acc,1.5)
-	local drag=false
-	local function Upd(x)
-		local a=trk.AbsolutePosition.X;local w=trk.AbsoluteSize.X
-		local pct=math.clamp((x-a)/w,0,1);local v=math.floor(mn+pct*(mx-mn))
-		Tw(fill,{Size=UDim2.new(pct,0,1,0)},.05);Tw(knob,{Position=UDim2.new(pct,0,.5,0)},.05)
-		vl.Text=tostring(v);if cb then cb(v)end
-	end
-	trk.InputBegan:Connect(function(i)
-		if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then drag=true;Upd(i.Position.X)end
+	track.InputBegan:Connect(function(i)
+		if i.UserInputType == Enum.UserInputType.MouseButton1 or
+		   i.UserInputType == Enum.UserInputType.Touch then
+			dragging = true
+			Update(i.Position.X)
+		end
 	end)
 	UserInputService.InputChanged:Connect(function(i)
-		if drag and(i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch)then Upd(i.Position.X)end
+		if dragging and (i.UserInputType == Enum.UserInputType.MouseMovement or
+			i.UserInputType == Enum.UserInputType.Touch) then
+			Update(i.Position.X)
+		end
 	end)
 	UserInputService.InputEnded:Connect(function(i)
-		if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then drag=false end
+		if i.UserInputType == Enum.UserInputType.MouseButton1 or
+		   i.UserInputType == Enum.UserInputType.Touch then
+			dragging = false
+		end
 	end)
-	return f,lbl
+	return frame, lbl
 end
 
-local function Inp(p,ph,ord)
-	local f=Instance.new("Frame");f.Size=UDim2.new(1,0,0,IH);f.BackgroundColor3=C.Card;f.LayoutOrder=ord or 0;f.Parent=p;Cor(f,7);Str(f,C.Acc,1)
-	local tb=Instance.new("TextBox");tb.Size=UDim2.new(1,-18,1,0);tb.Position=UDim2.new(0,9,0,0);tb.BackgroundTransparency=1;tb.Font=Enum.Font.Gotham;tb.PlaceholderText=ph;tb.Text="";tb.TextColor3=C.Txt;tb.PlaceholderColor3=C.Sub;tb.TextSize=FS;tb.ClearTextOnFocus=false;tb.Parent=f
-	return f,tb
+local function MakeInput(parent, placeholderKey, order, callback)
+	local frame = Instance.new("Frame")
+	frame.Size             = UDim2.new(0.97, 0, 0, 34)
+	frame.BackgroundColor3 = C.Card
+	frame.LayoutOrder      = order or 0
+	frame.Parent           = parent
+	AddCorner(frame, 7)
+	AddStroke(frame, C.Accent, 1)
+
+	local tb = Instance.new("TextBox")
+	tb.Size               = UDim2.new(1, -14, 1, 0)
+	tb.Position           = UDim2.new(0, 7, 0, 0)
+	tb.BackgroundTransparency = 1
+	tb.Font               = Enum.Font.Gotham
+	tb.PlaceholderText    = T(placeholderKey)
+	tb.PlaceholderColor3  = C.SubText
+	tb.Text               = ""
+	tb.TextColor3         = C.Text
+	tb.TextSize           = 12
+	tb.TextXAlignment     = GetTextAlign()
+	tb.ClearTextOnFocus   = false
+	tb.Parent             = frame
+
+	tb.Focused:Connect(function()
+		Tween(frame, {BackgroundColor3 = C.Card:Lerp(C.Accent, 0.1)}, 0.2)
+	end)
+	tb.FocusLost:Connect(function(enter)
+		Tween(frame, {BackgroundColor3 = C.Card}, 0.2)
+		if enter and callback then callback(tb.Text) end
+	end)
+	return frame, tb
+end
+
+local function MakeHeroCard(parent, order)
+	local card = Instance.new("Frame")
+	card.Size             = UDim2.new(0.97, 0, 0, 90)
+	card.BackgroundColor3 = C.Card
+	card.LayoutOrder      = order or 0
+	card.Parent           = parent
+	AddCorner(card, 12)
+	AddStroke(card, C.Accent, 1.5)
+
+	local grad = Instance.new("UIGradient")
+	grad.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0,   Color3.fromRGB(40, 10, 100)),
+		ColorSequenceKeypoint.new(0.5, Color3.fromRGB(10, 20, 80)),
+		ColorSequenceKeypoint.new(1,   Color3.fromRGB(10, 40, 90)),
+	})
+	grad.Rotation = 120
+	grad.Parent   = card
+
+	local img = Instance.new("ImageLabel")
+	img.Position       = UDim2.new(0, 10, 0.5, -28)
+	img.Size           = UDim2.new(0, 56, 0, 56)
+	img.BackgroundColor3 = C.BG
+	img.Image          = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. LocalPlayer.UserId .. "&width=150&height=150&format=png"
+	img.Parent         = card
+	AddCorner(img, 28)
+	AddStroke(img, C.Accent, 2)
+
+	local name = Instance.new("TextLabel")
+	name.Position      = UDim2.new(0, 76, 0, 18)
+	name.Size          = UDim2.new(1, -90, 0, 22)
+	name.BackgroundTransparency = 1
+	name.Font          = Enum.Font.GothamBold
+	name.Text          = LocalPlayer.DisplayName
+	name.TextColor3    = C.White
+	name.TextSize      = 17
+	name.TextXAlignment= Enum.TextXAlignment.Left
+	name.Parent        = card
+
+	local uname = Instance.new("TextLabel")
+	uname.Position     = UDim2.new(0, 76, 0, 40)
+	uname.Size         = UDim2.new(1, -90, 0, 15)
+	uname.BackgroundTransparency = 1
+	uname.Font         = Enum.Font.Gotham
+	uname.Text         = "@" .. LocalPlayer.Name
+	uname.TextColor3   = C.SubText
+	uname.TextSize     = 11
+	uname.TextXAlignment = Enum.TextXAlignment.Left
+	uname.Parent       = card
+
+	local badge = Instance.new("TextLabel")
+	badge.Position     = UDim2.new(0, 76, 0, 60)
+	badge.Size         = UDim2.new(0, 70, 0, 17)
+	badge.BackgroundColor3 = C.Accent
+	badge.Font         = Enum.Font.GothamBold
+	badge.Text         = "⚙ ADMIN"
+	badge.TextColor3   = C.White
+	badge.TextSize     = 9
+	badge.Parent       = card
+	AddCorner(badge, 5)
+	return card
 end
 
 -- ============================================================
--- هيكل اللوحة — أبعاد ثابتة بدون Scale
+-- SPLASH SCREEN
 -- ============================================================
 
--- زر الفتح العائم
-local FB=Instance.new("TextButton")
-FB.Size=UDim2.new(0,40,0,40);FB.Position=UDim2.new(0,8,0.5,-20)
-FB.BackgroundColor3=C.Acc;FB.Text="⚡";FB.Font=Enum.Font.GothamBold;FB.TextSize=18;FB.TextColor3=C.W
-FB.AutoButtonColor=false;FB.ZIndex=10;FB.Parent=SG;Cor(FB,20);Str(FB,C.AccB,2)
-local FBG=Str(FB,C.AccC,0)
-task.spawn(function()while FB.Parent do Tw(FBG,{Thickness=3},.8);task.wait(.9);Tw(FBG,{Thickness=0},.8);task.wait(.9)end end)
--- سحب الزر
-local fbd,fbs,fbp=false,nil,nil
-FB.InputBegan:Connect(function(i)if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then fbd=true;fbs=i.Position;fbp=FB.Position end end)
-UserInputService.InputChanged:Connect(function(i)if fbd and(i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch)then local d=i.Position-fbs;FB.Position=UDim2.new(0,fbp.X.Offset+d.X,0,fbp.Y.Offset+d.Y)end end)
-UserInputService.InputEnded:Connect(function(i)if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then fbd=false end end)
+local Splash = Instance.new("Frame")
+Splash.Name             = "Splash"
+Splash.Size             = UDim2.fromScale(1, 1)
+Splash.BackgroundColor3 = C.BG
+Splash.ZIndex           = 100
+Splash.Parent           = ScreenGui
 
--- اللوحة الرئيسية — حجم ثابت
-local MP=Instance.new("Frame")
-MP.Name="MainPanel"
-MP.Size=UDim2.new(0,PW,0,PH)   -- حجم ثابت بالبكسل
-MP.Position=UDim2.new(0.5,-PW/2,0.5,-PH/2)  -- وسط الشاشة
-MP.BackgroundColor3=C.Panel;MP.ZIndex=5;MP.ClipsDescendants=true;MP.Parent=SG
-Cor(MP,14);Str(MP,C.Acc,1.5)
-Grd(MP,Color3.fromRGB(9,10,27),Color3.fromRGB(6,7,19),150)
+local splashGrad = Instance.new("UIGradient")
+splashGrad.Color = ColorSequence.new({
+	ColorSequenceKeypoint.new(0,   Color3.fromRGB(4, 4, 20)),
+	ColorSequenceKeypoint.new(0.5, Color3.fromRGB(8, 4, 30)),
+	ColorSequenceKeypoint.new(1,   Color3.fromRGB(4, 8, 25)),
+})
+splashGrad.Rotation = 135
+splashGrad.Parent   = Splash
 
--- سحب اللوحة
-local pd,ps,pp=false,nil,nil
-local DA=Instance.new("TextButton");DA.Size=UDim2.new(1,0,0,34);DA.BackgroundTransparency=1;DA.Text="";DA.ZIndex=20;DA.Parent=MP
-DA.InputBegan:Connect(function(i)if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then pd=true;ps=i.Position;pp=MP.Position end end)
-UserInputService.InputChanged:Connect(function(i)if pd and(i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch)then local d=i.Position-ps;MP.Position=UDim2.new(pp.X.Scale,pp.X.Offset+d.X,pp.Y.Scale,pp.Y.Offset+d.Y)end end)
-UserInputService.InputEnded:Connect(function(i)if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then pd=false end end)
-
--- شريط العنوان
-local TB=Instance.new("Frame");TB.Size=UDim2.new(1,0,0,34);TB.BackgroundColor3=C.Side;TB.Parent=MP;Cor(TB,14)
-Grd(TB,Color3.fromRGB(18,6,56),Color3.fromRGB(6,14,52),90)
-local TBFix=Instance.new("Frame");TBFix.Size=UDim2.new(1,0,0,14);TBFix.Position=UDim2.new(0,0,1,-14);TBFix.BackgroundColor3=C.Side;TBFix.BorderSizePixel=0;TBFix.Parent=TB
-local TL=Instance.new("TextLabel");TL.Size=UDim2.new(1,-75,1,0);TL.Position=UDim2.new(0,12,0,0);TL.BackgroundTransparency=1;TL.Font=Enum.Font.GothamBold;TL.Text=T("title");TL.TextColor3=C.W;TL.TextSize=12;TL.TextXAlignment=Enum.TextXAlignment.Left;TL.Parent=TB
-local BDG=Instance.new("TextLabel");BDG.Size=UDim2.new(0,30,0,14);BDG.Position=UDim2.new(1,-68,0.5,-7);BDG.BackgroundColor3=C.Acc;BDG.Font=Enum.Font.GothamBold;BDG.Text="v2.0";BDG.TextColor3=C.W;BDG.TextSize=9;BDG.Parent=TB;Cor(BDG,4)
-local XB=Instance.new("TextButton");XB.Size=UDim2.new(0,25,0,25);XB.Position=UDim2.new(1,-30,0.5,-12);XB.BackgroundColor3=C.Err;XB.Font=Enum.Font.GothamBold;XB.Text="✕";XB.TextColor3=C.W;XB.TextSize=12;XB.AutoButtonColor=false;XB.ZIndex=25;XB.Parent=TB;Cor(XB,5)
-XB.MouseButton1Click:Connect(function()Tw(MP,{Position=UDim2.new(0.5,-PW/2,1.5,0)},.28,Enum.EasingStyle.Back,Enum.EasingDirection.In);task.delay(.32,function()MP.Visible=false end)end)
-FB.MouseButton1Click:Connect(function()if not fbd then MP.Visible=true;MP.Position=UDim2.new(0.5,-PW/2,1.5,0);Tw(MP,{Position=UDim2.new(0.5,-PW/2,0.5,-PH/2)},.38,Enum.EasingStyle.Back)end end)
-
--- الجسم
-local Body=Instance.new("Frame");Body.Size=UDim2.new(1,0,1,-34);Body.Position=UDim2.new(0,0,0,34);Body.BackgroundTransparency=1;Body.Parent=MP
-
--- شريط جانبي — عرض ثابت
-local Side=Instance.new("Frame");Side.Size=UDim2.new(0,SW,1,0);Side.BackgroundColor3=C.Side;Side.BorderSizePixel=0;Side.ClipsDescendants=true;Side.Parent=Body
-local SL=Instance.new("Frame");SL.Size=UDim2.new(0,1,1,0);SL.Position=UDim2.new(1,-1,0,0);SL.BackgroundColor3=C.Acc;SL.BackgroundTransparency=0.65;SL.BorderSizePixel=0;SL.Parent=Side
-
--- منطقة المحتوى
-local CA=Instance.new("Frame");CA.Size=UDim2.new(1,-SW,1,0);CA.Position=UDim2.new(0,SW,0,0);CA.BackgroundTransparency=1;CA.ClipsDescendants=true;CA.Parent=Body
-
--- صانع الصفحات
-local Pages={}
-local function MkPg(n)
-	local sf=Instance.new("ScrollingFrame")
-	sf.Name=n;sf.Size=UDim2.fromScale(1,1);sf.BackgroundTransparency=1;sf.BorderSizePixel=0
-	sf.ScrollBarThickness=3;sf.ScrollBarImageColor3=C.Acc
-	sf.CanvasSize=UDim2.new(0,0,2,0);sf.AutomaticCanvasSize=Enum.AutomaticSize.Y
-	sf.Visible=false;sf.Parent=CA;LL(sf,6);Pd(sf,8,16,8,8)
-	Pages[n]=sf;return sf
+for i = 1, 3 do
+	local orb = Instance.new("Frame")
+	orb.AnchorPoint        = Vector2.new(0.5, 0.5)
+	orb.Position           = UDim2.new(math.random(20, 80)/100, 0, math.random(20, 80)/100, 0)
+	orb.Size               = UDim2.new(0, 180, 0, 180)
+	orb.BackgroundColor3   = i == 1 and Color3.fromRGB(80, 0, 180) or
+	                          i == 2 and Color3.fromRGB(0, 60, 200) or
+	                                     Color3.fromRGB(120, 0, 150)
+	orb.BackgroundTransparency = 0.85
+	orb.ZIndex             = 99
+	orb.Parent             = Splash
+	AddCorner(orb, 100)
 end
 
-local PG={
-	Home=MkPg("Home"),Move=MkPg("Move"),Cp=MkPg("Cp"),
-	Pl=MkPg("Pl"),Esp=MkPg("Esp"),Ext=MkPg("Ext"),
-	Time=MkPg("Time"),Set=MkPg("Set"),
+local logoFrame = Instance.new("Frame")
+logoFrame.AnchorPoint        = Vector2.new(0.5, 0.5)
+logoFrame.Position           = UDim2.new(0.5, 0, 0.42, 0)
+logoFrame.Size               = UDim2.new(0, 300, 0, 80)
+logoFrame.BackgroundTransparency = 1
+logoFrame.ZIndex             = 101
+logoFrame.Parent             = Splash
+
+local logoText = Instance.new("TextLabel")
+logoText.Size                = UDim2.fromScale(1, 0.6)
+logoText.BackgroundTransparency = 1
+logoText.Font                = Enum.Font.GothamBlack
+logoText.Text                = "THAER X100"
+logoText.TextColor3          = C.White
+logoText.TextSize            = 38
+logoText.ZIndex              = 102
+logoText.Parent              = logoFrame
+
+local logoGrad = Instance.new("UIGradient")
+logoGrad.Color = ColorSequence.new({
+	ColorSequenceKeypoint.new(0,   Color3.fromRGB(160, 80,  255)),
+	ColorSequenceKeypoint.new(0.5, Color3.fromRGB(100, 160, 255)),
+	ColorSequenceKeypoint.new(1,   Color3.fromRGB(80,  60,  240)),
+})
+logoGrad.Rotation = 45
+logoGrad.Parent   = logoText
+
+local logoSub = Instance.new("TextLabel")
+logoSub.Size                = UDim2.new(1, 0, 0.38, 0)
+logoSub.Position            = UDim2.new(0, 0, 0.62, 0)
+logoSub.BackgroundTransparency = 1
+logoSub.Font                = Enum.Font.Gotham
+logoSub.Text                = "Professional Admin Panel"
+logoSub.TextColor3          = C.SubText
+logoSub.TextSize            = 13
+logoSub.ZIndex              = 102
+logoSub.Parent              = logoFrame
+
+local barBG = Instance.new("Frame")
+barBG.AnchorPoint           = Vector2.new(0.5, 0.5)
+barBG.Position              = UDim2.new(0.5, 0, 0.65, 0)
+barBG.Size                  = UDim2.new(0, 280, 0, 4)
+barBG.BackgroundColor3      = C.Sidebar
+barBG.ZIndex                = 101
+barBG.Parent                = Splash
+AddCorner(barBG, 2)
+
+local barFill = Instance.new("Frame")
+barFill.Size                = UDim2.new(0, 0, 1, 0)
+barFill.BackgroundColor3    = C.Accent
+barFill.ZIndex              = 102
+barFill.Parent              = barBG
+AddCorner(barFill, 2)
+AddGradient(barFill, Color3.fromRGB(120, 60, 255), Color3.fromRGB(60, 120, 255), 90)
+
+local loadingLbl = Instance.new("TextLabel")
+loadingLbl.AnchorPoint      = Vector2.new(0.5, 0.5)
+loadingLbl.Position         = UDim2.new(0.5, 0, 0.72, 0)
+loadingLbl.Size             = UDim2.new(0, 300, 0, 20)
+loadingLbl.BackgroundTransparency = 1
+loadingLbl.Font             = Enum.Font.Gotham
+loadingLbl.Text             = "Initializing systems..."
+loadingLbl.TextColor3       = C.SubText
+loadingLbl.TextSize         = 11
+loadingLbl.ZIndex           = 101
+loadingLbl.Parent           = Splash
+
+local loadingMessages = {
+	"Initializing systems...",
+	"Loading UI components...",
+	"Connecting to game services...",
+	"Setting up admin tools...",
+	"Applying visual effects...",
+	"Almost ready...",
+	"Welcome, Admin!",
 }
 
-local function ShowPage(n)
-	for _,pg in pairs(PG) do pg.Visible=false end
-	if PG[n] then PG[n].Visible=true end
-	Cfg.Page=n
+-- ============================================================
+-- MAIN PANEL
+-- ============================================================
+
+local MainPanel = Instance.new("Frame")
+MainPanel.Name              = "MainPanel"
+MainPanel.AnchorPoint       = Vector2.new(0.5, 0.5)
+MainPanel.Position          = UDim2.new(0.5, 0, 0.5, 0)
+MainPanel.Size              = UDim2.new(0, 580, 0, 380)  -- Reduced from 700x460
+MainPanel.BackgroundColor3  = C.BG
+MainPanel.Visible           = false
+MainPanel.Parent            = ScreenGui
+AddCorner(MainPanel, 14)
+AddStroke(MainPanel, C.Accent, 1.5)
+
+local panelGrad = Instance.new("UIGradient")
+panelGrad.Color = ColorSequence.new({
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(10, 8, 30)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(6, 12, 28)),
+})
+panelGrad.Rotation = 130
+panelGrad.Parent   = MainPanel
+
+-- Title bar
+local TitleBar = Instance.new("Frame")
+TitleBar.Name             = "TitleBar"
+TitleBar.Size             = UDim2.new(1, 0, 0, 36)
+TitleBar.BackgroundColor3 = C.Sidebar
+TitleBar.Parent           = MainPanel
+AddCorner(TitleBar, 14)
+
+local tbMask = Instance.new("Frame")
+tbMask.Position           = UDim2.new(0, 0, 0.5, 0)
+tbMask.Size               = UDim2.new(1, 0, 0.5, 0)
+tbMask.BackgroundColor3   = C.Sidebar
+tbMask.BorderSizePixel    = 0
+tbMask.Parent             = TitleBar
+
+local tbTitle = Instance.new("TextLabel")
+tbTitle.Position          = UDim2.new(0, 14, 0, 0)
+tbTitle.Size              = UDim2.new(0.5, 0, 1, 0)
+tbTitle.BackgroundTransparency = 1
+tbTitle.Font              = Enum.Font.GothamBold
+tbTitle.Text              = "THAER X100  ·  Admin Panel"
+tbTitle.TextColor3        = C.Text
+tbTitle.TextSize          = 11
+tbTitle.TextXAlignment    = Enum.TextXAlignment.Left
+tbTitle.Parent            = TitleBar
+
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Position         = UDim2.new(1, -32, 0.5, -11)
+CloseBtn.Size             = UDim2.new(0, 22, 0, 22)
+CloseBtn.BackgroundColor3 = C.Danger
+CloseBtn.Font             = Enum.Font.GothamBold
+CloseBtn.Text             = "✕"
+CloseBtn.TextColor3       = C.White
+CloseBtn.TextSize         = 10
+CloseBtn.Parent           = TitleBar
+AddCorner(CloseBtn, 11)
+
+local MinBtn = Instance.new("TextButton")
+MinBtn.Position           = UDim2.new(1, -58, 0.5, -11)
+MinBtn.Size               = UDim2.new(0, 22, 0, 22)
+MinBtn.BackgroundColor3   = Color3.fromRGB(220, 160, 30)
+MinBtn.Font               = Enum.Font.GothamBold
+MinBtn.Text               = "−"
+MinBtn.TextColor3         = C.White
+MinBtn.TextSize           = 12
+MinBtn.Parent             = TitleBar
+AddCorner(MinBtn, 11)
+
+-- Sidebar (narrowed slightly)
+local SIDEBAR_W = 118
+
+local Sidebar = Instance.new("Frame")
+Sidebar.Name              = "Sidebar"
+Sidebar.Position          = UDim2.new(0, 0, 0, 36)
+Sidebar.Size              = UDim2.new(0, SIDEBAR_W, 1, -36)
+Sidebar.BackgroundColor3  = C.Sidebar
+Sidebar.Parent            = MainPanel
+
+local sbMaskTop = Instance.new("Frame")
+sbMaskTop.Size            = UDim2.new(1, 0, 0, 8)
+sbMaskTop.BackgroundColor3= C.Sidebar
+sbMaskTop.BorderSizePixel = 0
+sbMaskTop.Parent          = Sidebar
+
+local sbCorner = Instance.new("UICorner")
+sbCorner.CornerRadius     = UDim.new(0, 14)
+sbCorner.Parent           = Sidebar
+
+local sbMaskBR = Instance.new("Frame")
+sbMaskBR.Position         = UDim2.new(0.5, 0, 0, 0)
+sbMaskBR.Size             = UDim2.new(0.5, 0, 1, 0)
+sbMaskBR.BackgroundColor3 = C.Sidebar
+sbMaskBR.BorderSizePixel  = 0
+sbMaskBR.Parent           = Sidebar
+
+local sbMaskTop2 = Instance.new("Frame")
+sbMaskTop2.Size           = UDim2.new(1, 0, 0, 14)
+sbMaskTop2.BackgroundColor3= C.Sidebar
+sbMaskTop2.BorderSizePixel= 0
+sbMaskTop2.Parent         = Sidebar
+
+local sbBrand = Instance.new("TextLabel")
+sbBrand.Position          = UDim2.new(0, 0, 0, 10)
+sbBrand.Size              = UDim2.new(1, 0, 0, 26)
+sbBrand.BackgroundTransparency = 1
+sbBrand.Font              = Enum.Font.GothamBlack
+sbBrand.Text              = "TX100"
+sbBrand.TextColor3        = C.Accent
+sbBrand.TextSize          = 15
+sbBrand.Parent            = Sidebar
+
+local sbNav = Instance.new("Frame")
+sbNav.Position            = UDim2.new(0, 0, 0, 44)
+sbNav.Size                = UDim2.new(1, 0, 1, -44)
+sbNav.BackgroundTransparency = 1
+sbNav.Parent              = Sidebar
+
+AddListLayout(sbNav, 3, Enum.FillDirection.Vertical, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Top)
+AddPadding(sbNav, 3, 3, 5, 5)
+
+-- Content area
+local ContentArea = Instance.new("Frame")
+ContentArea.Name          = "Content"
+ContentArea.Position      = UDim2.new(0, SIDEBAR_W, 0, 36)
+ContentArea.Size          = UDim2.new(1, -SIDEBAR_W, 1, -36)
+ContentArea.BackgroundTransparency = 1
+ContentArea.ClipsDescendants = true
+ContentArea.Parent        = MainPanel
+
+-- ============================================================
+-- PAGE CONTAINERS
+-- ============================================================
+
+local Pages = {}
+
+local function MakePage(name)
+	local scroll = Instance.new("ScrollingFrame")
+	scroll.Name               = name
+	scroll.Size               = UDim2.fromScale(1, 1)
+	scroll.BackgroundTransparency = 1
+	scroll.ScrollBarThickness = 3
+	scroll.ScrollBarImageColor3 = C.Accent
+	scroll.CanvasSize         = UDim2.new(0, 0, 0, 0)
+	scroll.AutomaticCanvasSize= Enum.AutomaticSize.Y
+	scroll.Visible            = false
+	scroll.Parent             = ContentArea
+
+	AddListLayout(scroll, 6, Enum.FillDirection.Vertical, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Top)
+	AddPadding(scroll, 8, 8, 5, 5)
+
+	Pages[name] = scroll
+	return scroll
 end
 
--- ============================================================
--- شريط التنقل الجانبي
--- ============================================================
-local NavList=Instance.new("UIListLayout");NavList.Padding=UDim.new(0,2);NavList.HorizontalAlignment=Enum.HorizontalAlignment.Center;NavList.VerticalAlignment=Enum.VerticalAlignment.Top;NavList.SortOrder=Enum.SortOrder.LayoutOrder;NavList.Parent=Side
-Pd(Side,6,6,2,2)
+local PageHome        = MakePage("Home")
+local PageMovement    = MakePage("Movement")
+local PageCheckpoints = MakePage("Checkpoints")
+local PagePlayers     = MakePage("Players")
+local PageESP         = MakePage("ESP")
+local PageExternalScripts = MakePage("ExternalScripts")
+local PageSettings    = MakePage("Settings")
 
-local NavPages={"Home","Move","Cp","Pl","Esp","Ext","Time","Set"}
-local NavBtns={}
-for i,pg in ipairs(NavPages) do
-	local pageName = pg -- تأمين المتغير للكلوزر (Closure Fix)
-	local btn=Instance.new("TextButton")
-	btn.Size=UDim2.new(1,0,0,IsMob and 55 or 48)
-	btn.BackgroundTransparency=1;btn.AutoButtonColor=false;btn.Text="";btn.LayoutOrder=i;btn.Parent=Side;Cor(btn,7)
-	local hl=Instance.new("Frame");hl.Size=UDim2.new(0,3,0.6,0);hl.AnchorPoint=Vector2.new(0,.5);hl.Position=UDim2.new(0,0,.5,0);hl.BackgroundColor3=C.Acc;hl.BackgroundTransparency=1;hl.BorderSizePixel=0;hl.Parent=btn;Cor(hl,2)
-	local ic=Instance.new("TextLabel");ic.Size=UDim2.new(1,0,0,18);ic.Position=UDim2.new(0,0,0,IsMob and 6 or 4);ic.BackgroundTransparency=1;ic.Font=Enum.Font.GothamBold
-	local icons={"🏠","✈","📍","👥","👁","✨","⏱","⚙"}
-	ic.Text=icons[i];ic.TextSize=IsMob and 16 or 14;ic.TextColor3=C.Sub;ic.Parent=btn
-	local tx=Instance.new("TextLabel");tx.Size=UDim2.new(1,-4,0,12);tx.Position=UDim2.new(0,2,0,IsMob and 26 or 22);tx.BackgroundTransparency=1;tx.Font=Enum.Font.Gotham
-	local txts={"رئيسية","حركة","حفظ","لاعبين","رادار","إضافات","وقت","إعدادات"}
-	tx.Text=txts[i];tx.TextSize=8;tx.TextColor3=C.Sub;tx.TextWrapped=true;tx.Parent=btn
-	local function SetAct(on)
-		if on then Tw(btn,{BackgroundTransparency=0.82},.15);btn.BackgroundColor3=C.Acc;Tw(ic,{TextColor3=C.W},.15);Tw(tx,{TextColor3=C.Acc},.15);Tw(hl,{BackgroundTransparency=0},.15)
-		else Tw(btn,{BackgroundTransparency=1},.15);Tw(ic,{TextColor3=C.Sub},.15);Tw(tx,{TextColor3=C.Sub},.15);Tw(hl,{BackgroundTransparency=1},.15)end
+-- ============================================================
+-- SIDEBAR NAVIGATION
+-- ============================================================
+
+local navDefs = {
+	{icon = "🏠", labelKey = "Home",        page = "Home"},
+	{icon = "✈️",  labelKey = "Movement",    page = "Movement"},
+	{icon = "📍", labelKey = "Checkpoints", page = "Checkpoints"},
+	{icon = "👥", labelKey = "Players",     page = "Players"},
+	{icon = "👁",  labelKey = "ESP",         page = "ESP"},
+	{icon = "📜", labelKey = "ExternalScripts", page = "ExternalScripts"},
+	{icon = "⚙️",  labelKey = "Settings",    page = "Settings"},
+}
+
+local navBtns = {}
+
+local function ShowPage(name)
+	for n, pg in pairs(Pages) do
+		pg.Visible = (n == name)
 	end
-	table.insert(NavBtns,{btn=btn,ic=ic,tx=tx,set=SetAct,page=pageName})
-	btn.MouseButton1Click:Connect(function()
-		for _,nb in ipairs(NavBtns) do nb.set(nb.page==pageName)end;ShowPage(pageName)
+	for _, nb in pairs(navBtns) do
+		local active = (nb.pageName == name)
+		Tween(nb.frame, {BackgroundColor3 = active and C.Accent or Color3.fromRGB(0, 0, 0)}, 0.2)
+		Tween(nb.frame, {BackgroundTransparency = active and 0 or 1}, 0.2)
+		nb.lbl.TextColor3 = active and C.White or C.SubText
+	end
+	Config.CurrentPage = name
+end
+
+for i, def in ipairs(navDefs) do
+	local btn = Instance.new("TextButton")
+	btn.Size               = UDim2.new(1, -4, 0, 30)
+	btn.BackgroundColor3   = Color3.fromRGB(0, 0, 0)
+	btn.BackgroundTransparency = 1
+	btn.Text               = ""
+	btn.LayoutOrder        = i
+	btn.Parent             = sbNav
+	AddCorner(btn, 7)
+
+	local iconL = Instance.new("TextLabel")
+	iconL.Position         = UDim2.new(0, 7, 0.5, -8)
+	iconL.Size             = UDim2.new(0, 18, 0, 16)
+	iconL.BackgroundTransparency = 1
+	iconL.Font             = Enum.Font.GothamBold
+	iconL.Text             = def.icon
+	iconL.TextSize         = 13
+	iconL.TextColor3       = C.SubText
+	iconL.Parent           = btn
+
+	local lbl = Instance.new("TextLabel")
+	lbl.Position           = UDim2.new(0, 28, 0.5, -8)
+	lbl.Size               = UDim2.new(1, -32, 0, 16)
+	lbl.BackgroundTransparency = 1
+	lbl.Font               = Enum.Font.Gotham
+	lbl.Text               = T(def.labelKey)
+	lbl.TextSize           = 11
+	lbl.TextColor3         = C.SubText
+	lbl.TextXAlignment     = Enum.TextXAlignment.Left
+	lbl.Parent             = btn
+
+	table.insert(navBtns, {frame = btn, lbl = lbl, pageName = def.page, labelKey = def.labelKey, iconL = iconL})
+
+	btn.MouseButton1Click:Connect(function() ShowPage(def.page) end)
+	btn.MouseEnter:Connect(function()
+		if Config.CurrentPage ~= def.page then
+			Tween(btn, {BackgroundTransparency = 0.7}, 0.12)
+			Tween(btn, {BackgroundColor3 = C.Accent}, 0.12)
+		end
+	end)
+	btn.MouseLeave:Connect(function()
+		if Config.CurrentPage ~= def.page then
+			Tween(btn, {BackgroundTransparency = 1}, 0.12)
+		end
 	end)
 end
 
 -- ============================================================
--- صفحة الرئيسية
+-- LANGUAGE REFRESH (updates all translatable UI elements)
 -- ============================================================
--- بطاقة الترحيب
-local heroF=Instance.new("Frame");heroF.Size=UDim2.new(1,0,0,82);heroF.BackgroundColor3=C.Card;heroF.LayoutOrder=1;heroF.Parent=PG.Home;Cor(heroF,10);Str(heroF,C.Acc,1)
-Grd(heroF,Color3.fromRGB(22,7,68),Color3.fromRGB(5,16,60),140)
-local hShim=Instance.new("Frame");hShim.Size=UDim2.new(0,0,0,2);hShim.BackgroundColor3=C.AccC;hShim.BackgroundTransparency=0.35;hShim.BorderSizePixel=0;hShim.Parent=heroF;Cor(hShim,1)
-task.spawn(function()while heroF.Parent do Tw(hShim,{Size=UDim2.new(1,0,0,2)},.7,Enum.EasingStyle.Sine);task.wait(.8);hShim.Size=UDim2.new(0,0,0,2);task.wait(.35)end end)
-local hT=Instance.new("TextLabel");hT.Position=UDim2.new(0,12,0,10);hT.Size=UDim2.new(.9,0,0,22);hT.BackgroundTransparency=1;hT.Font=Enum.Font.GothamBold;hT.Text="⚡ THAER X100  |  Admin Panel";hT.TextColor3=C.W;hT.TextSize=13;hT.TextXAlignment=Enum.TextXAlignment.Left;hT.Parent=heroF
-local hS=Instance.new("TextLabel");hS.Position=UDim2.new(0,12,0,34);hS.Size=UDim2.new(.9,0,0,18);hS.BackgroundTransparency=1;hS.Font=Enum.Font.Gotham;hS.Text=T("welcome");hS.TextColor3=C.Sub;hS.TextSize=10;hS.TextXAlignment=Enum.TextXAlignment.Left;hS.TextWrapped=true;hS.Parent=heroF
-local hP=Instance.new("TextLabel");hP.Position=UDim2.new(0,12,0,56);hP.Size=UDim2.new(.9,0,0,16);hP.BackgroundTransparency=1;hP.Font=Enum.Font.GothamBold;hP.Text="👤 "..LP.Name;hP.TextColor3=C.AccB;hP.TextSize=9;hP.TextXAlignment=Enum.TextXAlignment.Left;hP.Parent=heroF
 
--- شبكة الحالة
-local stF=Instance.new("Frame");stF.Size=UDim2.new(1,0,0,58);stF.BackgroundColor3=C.Card;stF.LayoutOrder=2;stF.Parent=PG.Home;Cor(stF,8);Str(stF,C.AccB,1)
-local stHL=Instance.new("UIListLayout");stHL.FillDirection=Enum.FillDirection.Horizontal;stHL.HorizontalAlignment=Enum.HorizontalAlignment.Center;stHL.VerticalAlignment=Enum.VerticalAlignment.Center;stHL.Padding=UDim.new(0,0);stHL.Parent=stF
-local StDefs={{lk="statF",get=function()return Cfg.FlyOn end},{lk="statN",get=function()return Cfg.NcOn end},{lk="statE",get=function()return Cfg.ESPOn end},{lk="statI",get=function()return Cfg.InvisOn end},{lk="statT",get=function()return Cfg.TimeOn end},{lk="statA",get=function()return Cfg.AntiAFK end}}
-local StLbls={}
-for _,sd in ipairs(StDefs) do
-	local col=Instance.new("Frame");col.Size=UDim2.new(1/#StDefs,0,1,0);col.BackgroundTransparency=1;col.Parent=stF
-	local dot=Instance.new("Frame");dot.Size=UDim2.new(0,6,0,6);dot.AnchorPoint=Vector2.new(.5,0);dot.Position=UDim2.new(.5,0,0,6);dot.BackgroundColor3=C.Sub;dot.BorderSizePixel=0;dot.Parent=col;Cor(dot,3)
-	local vl=Instance.new("TextLabel");vl.Size=UDim2.new(1,0,0,16);vl.Position=UDim2.new(0,0,0,16);vl.BackgroundTransparency=1;vl.Font=Enum.Font.GothamBold;vl.Text="OFF";vl.TextColor3=C.Sub;vl.TextSize=10;vl.Parent=col
-	local ll=Instance.new("TextLabel");ll.Size=UDim2.new(1,0,0,13);ll.Position=UDim2.new(0,0,0,34);ll.BackgroundTransparency=1;ll.Font=Enum.Font.Gotham;ll.Text=T(sd.lk);ll.TextColor3=C.Sub;ll.TextSize=8;ll.Parent=col
-	table.insert(StLbls,{vl=vl,ll=ll,dot=dot,sd=sd})
+-- We collect references to all translatable labels so we can refresh them
+local TranslatableElements = {}  -- {type="label"/"textbox", obj=..., key=...}
+
+-- ============================================================
+-- PAGE: HOME
+-- ============================================================
+
+MakeHeroCard(PageHome, 1)
+
+local statusCard = Instance.new("Frame")
+statusCard.Size             = UDim2.new(0.97, 0, 0, 58)
+statusCard.BackgroundColor3 = C.Card
+statusCard.LayoutOrder      = 2
+statusCard.Parent           = PageHome
+AddCorner(statusCard, 8)
+AddStroke(statusCard, C.AccentB, 1)
+
+local statusList = Instance.new("UIListLayout")
+statusList.FillDirection    = Enum.FillDirection.Horizontal
+statusList.Padding          = UDim.new(0, 0)
+statusList.HorizontalAlignment = Enum.HorizontalAlignment.Left
+statusList.VerticalAlignment   = Enum.VerticalAlignment.Center
+statusList.Parent           = statusCard
+
+local statItems = {
+	{lbl = "StatFly",    val = function() return Config.FlyEnabled      and "ON" or "OFF" end, color = function() return Config.FlyEnabled      and C.Success or C.SubText end},
+	{lbl = "StatNoClip", val = function() return Config.NoClipEnabled   and "ON" or "OFF" end, color = function() return Config.NoClipEnabled   and C.Success or C.SubText end},
+	{lbl = "StatESP",    val = function() return Config.ESPEnabled      and "ON" or "OFF" end, color = function() return Config.ESPEnabled      and C.Success or C.SubText end},
+	{lbl = "StatAntiAFK",val = function() return Config.AntiAFKEnabled  and "ON" or "OFF" end, color = function() return Config.AntiAFKEnabled  and C.Success or C.SubText end},
+}
+
+local statValueLabels = {}
+for _, si in ipairs(statItems) do
+	local col = Instance.new("Frame")
+	col.Size               = UDim2.new(0.25, 0, 1, 0)
+	col.BackgroundTransparency = 1
+	col.Parent             = statusCard
+
+	local vl = Instance.new("TextLabel")
+	vl.Size                = UDim2.new(1, 0, 0.52, 0)
+	vl.Position            = UDim2.new(0, 0, 0.08, 0)
+	vl.BackgroundTransparency = 1
+	vl.Font                = Enum.Font.GothamBold
+	vl.Text                = si.val()
+	vl.TextColor3          = si.color()
+	vl.TextSize            = 12
+	vl.Parent              = col
+
+	local ll = Instance.new("TextLabel")
+	ll.Size                = UDim2.new(1, 0, 0.35, 0)
+	ll.Position            = UDim2.new(0, 0, 0.6, 0)
+	ll.BackgroundTransparency = 1
+	ll.Font                = Enum.Font.Gotham
+	ll.Text                = T(si.lbl)
+	ll.TextColor3          = C.SubText
+	ll.TextSize            = 9
+	ll.Parent              = col
+
+	table.insert(statValueLabels, {vl = vl, ll = ll, si = si})
 end
+
 RunService.Heartbeat:Connect(function()
-	for _,sv in pairs(StLbls) do
-		local on=sv.sd.get();sv.vl.Text=on and"ON"or"OFF";sv.vl.TextColor3=on and C.OK or C.Sub;sv.dot.BackgroundColor3=on and C.OK or C.Sub;sv.ll.Text=T(sv.sd.lk)
+	for _, sv in pairs(statValueLabels) do
+		sv.vl.Text       = sv.si.val()
+		sv.vl.TextColor3 = sv.si.color()
 	end
 end)
 
--- ============================================================
--- صفحة الحركة
--- ============================================================
-local mH,mHT,mHS=PgH(PG.Move,"movTitle","movSub",1)
-SecH(PG.Move,T("flySec"),2)
-local _,flySet,flyLbl=Tog(PG.Move,"flyTog",Cfg.FlyOn,3,function(v)if v then StartFly()else StopFly()end end)
-local fslF,fslL=Sldr(PG.Move,"flySpd",5,500,Cfg.FlySpeed,4,function(v)Cfg.FlySpeed=v end)
-SecH(PG.Move,T("charSec"),5)
-local _,ncSet,ncLbl=Tog(PG.Move,"ncTog",Cfg.NcOn,6,function(v)if v then StartNc()else StopNc()end end)
-local _,godSet,godLbl=Tog(PG.Move,"godTog",Cfg.GodMode,7,function(v)ToggleGodMode(v)end)
-local _,jumpSet,jumpLbl=Tog(PG.Move,"infJump",Cfg.InfJump,8,function(v)ToggleInfJump(v)end)
-local wslF,wslL=Sldr(PG.Move,"walkSpd",1,500,Cfg.WalkSpeed,9,function(v)Cfg.WalkSpeed=v;local h=Hum();if h then h.WalkSpeed=v end end)
-local jslF,jslL=Sldr(PG.Move,"jumpPow",1,500,Cfg.JumpPower,10,function(v)Cfg.JumpPower=v;local h=Hum();if h then h.JumpPower=v end end)
-Btn(PG.Move,"resetC",C.Err,11,function()local h=Hum();if h then h.Health=0 end end)
+local infoTxt = Instance.new("TextLabel")
+infoTxt.Size               = UDim2.new(0.97, 0, 0, 30)
+infoTxt.BackgroundTransparency = 1
+infoTxt.Font               = Enum.Font.Gotham
+infoTxt.Text               = T("WelcomeMsg")
+infoTxt.TextColor3         = C.SubText
+infoTxt.TextSize           = 10
+infoTxt.TextWrapped        = true
+infoTxt.LayoutOrder        = 3
+infoTxt.TextXAlignment     = GetTextAlign()
+infoTxt.Parent             = PageHome
 
 -- ============================================================
--- صفحة نقاط الحفظ
+-- PAGE: MOVEMENT
 -- ============================================================
-PgH(PG.Cp,"cpTitle","cpSub",1)
-for i=1,3 do
-	SecH(PG.Cp,T("slot").." "..i,(i-1)*3+2)
-	local row=Instance.new("Frame");row.Size=UDim2.new(1,0,0,BH);row.BackgroundTransparency=1;row.LayoutOrder=(i-1)*3+3;row.Parent=PG.Cp
-	LL(row,6,Enum.FillDirection.Horizontal,Enum.HorizontalAlignment.Center,Enum.VerticalAlignment.Center)
-	local sb=Instance.new("TextButton");sb.Size=UDim2.new(0.48,0,0,BH);sb.BackgroundColor3=C.AccB;sb.Font=Enum.Font.GothamBold;sb.Text=T("saveLbl");sb.TextColor3=C.W;sb.TextSize=FS;sb.AutoButtonColor=false;sb.Parent=row;Cor(sb,7)
-	local lb=Instance.new("TextButton");lb.Size=UDim2.new(0.48,0,0,BH);lb.BackgroundColor3=C.Acc;lb.Font=Enum.Font.GothamBold;lb.Text=T("tpLbl");lb.TextColor3=C.W;lb.TextSize=FS;lb.AutoButtonColor=false;lb.Parent=row;Cor(lb,7)
-	local sl=i
-	sb.MouseButton1Click:Connect(function()SaveCP(sl);Tw(sb,{BackgroundColor3=C.OK},.15);task.delay(.6,function()Tw(sb,{BackgroundColor3=C.AccB},.3)end)end)
-	lb.MouseButton1Click:Connect(function()LoadCP(sl)end)
-end
 
--- ============================================================
--- صفحة اللاعبين
--- ============================================================
-PgH(PG.Pl,"plTitle","plSub",1)
-SecH(PG.Pl,T("targetSec"),2)
-local _,plTB=Inp(PG.Pl,T("plHint"),3)
-Btn(PG.Pl,"tpTo",C.Acc,4,function()local t=FindP(plTB.Text);if t then TpTo(t)end end)
-Btn(PG.Pl,"follow",C.AccB,5,function()local t=FindP(plTB.Text);if t then StartFollow(t)else StopFollow()end end)
-Btn(PG.Pl,"spec",Color3.fromRGB(30,148,98),6,function()local t=FindP(plTB.Text);if t then StartSpec(t)else StopSpec()end end)
-Btn(PG.Pl,"copyOutfit",Color3.fromRGB(142,72,215),7,function()local n=SelPlayer~=""and SelPlayer or plTB.Text;CopyOutfit(n)end)
-Btn(PG.Pl,"killAll",C.Err,8,function()KillAllPlayers()end)
-Btn(PG.Pl,"stopAll",Color3.fromRGB(72,72,105),9,function()StopFollow();StopSpec()end)
-SecH(PG.Pl,T("plList"),9)
-local plFr=Instance.new("Frame");plFr.Size=UDim2.new(1,0,0,108);plFr.BackgroundColor3=C.Card;plFr.LayoutOrder=11;plFr.Parent=PG.Pl;Cor(plFr,7);Str(plFr,C.Acc,1)
-local plSF=Instance.new("ScrollingFrame");plSF.Size=UDim2.fromScale(1,1);plSF.BackgroundTransparency=1;plSF.ScrollBarThickness=3;plSF.ScrollBarImageColor3=C.Acc;plSF.CanvasSize=UDim2.new(0,0,0,0);plSF.AutomaticCanvasSize=Enum.AutomaticSize.Y;plSF.Parent=plFr;LL(plSF,3);Pd(plSF,4,4,5,5)
-local function RefPL()
-	for _,c in pairs(plSF:GetChildren()) do if not c:IsA("UIListLayout")and not c:IsA("UIPadding")then c:Destroy()end end
-	for _,p in pairs(Players:GetPlayers()) do
-		local r=Instance.new("TextButton");r.Size=UDim2.new(1,0,0,26);r.BackgroundColor3=C.Side;r.Font=Enum.Font.Gotham;r.Text=(p==LP and"⭐ "or"")..p.Name;r.TextColor3=p==LP and C.Acc or C.Txt;r.TextSize=11;r.TextXAlignment=Enum.TextXAlignment.Left;Cor(r,5);Pd(r,0,0,8,8);r.Parent=plSF
-		r.MouseButton1Click:Connect(function()plTB.Text=p.Name;SelPlayer=p.Name;Tw(r,{BackgroundColor3=C.Card},.1);task.delay(.3,function()Tw(r,{BackgroundColor3=C.Side},.2)end)end)
-	end
-end
-RefPL();Players.PlayerAdded:Connect(RefPL);Players.PlayerRemoving:Connect(function()task.wait(.1);RefPL()end)
+local movHeader, movHeaderT, movHeaderS = MakePageHeader(PageMovement, "MovementTitle", "MovementSub", 1)
+local movSec1, movSec1L = MakeSectionLabel(PageMovement, T("SectionFlight"), 2)
 
--- ============================================================
--- صفحة الرادار والموسيقى
--- ============================================================
-PgH(PG.Esp,"espTitle","espSub",1)
-Tog(PG.Esp,"espTog",false,3,function(v)TogESP(v)end)
-Tog(PG.Esp,"aimTog",false,4,function(v)ToggleAimbot(v)end)
-local espIL=Instance.new("TextLabel");espIL.Size=UDim2.new(1,0,0,30);espIL.BackgroundTransparency=1;espIL.Font=Enum.Font.Gotham;espIL.Text=T("espInfo");espIL.TextColor3=C.Sub;espIL.TextSize=10;espIL.TextWrapped=true;espIL.LayoutOrder=4;espIL.Parent=PG.Esp
-SecH(PG.Esp,T("musicSec"),5)
-local _,mInTB=Inp(PG.Esp,T("sndHint"),6)
-Sldr(PG.Esp,"vol",0,100,math.floor(Cfg.MusicVol*100),7,function(v)Cfg.MusicVol=v/100;if ActiveMusic then ActiveMusic.Volume=Cfg.MusicVol end end)
-Btn(PG.Esp,"playM",C.OK,8,function()local id=tonumber(mInTB.Text);if id then PlayM(id,Cfg.MusicVol)end end)
-Btn(PG.Esp,"stopM",C.Err,9,function()StopM()end)
+local _, flyToggleUpdate, flyToggleLbl
+_, flyToggleUpdate, flyToggleLbl = MakeToggle(PageMovement, "FlyMode", false, 3, function(v)
+	if v then StartFly() else StopFly() end
+end)
 
--- ============================================================
--- صفحة الإضافات
--- ============================================================
-PgH(PG.Ext,"extTitle","extSub",1)
-Tog(PG.Ext,"invisTog",false,2,function(v)SetInvis(v)end)
-local invIL=Instance.new("TextLabel");invIL.Size=UDim2.new(1,0,0,30);invIL.BackgroundTransparency=1;invIL.Font=Enum.Font.Gotham;invIL.Text=T("invisInfo");invIL.TextColor3=C.Sub;invIL.TextSize=10;invIL.TextWrapped=true;invIL.LayoutOrder=4;invIL.Parent=PG.Ext
-SecH(PG.Ext,T("clickerSec"),4)
-Tog(PG.Ext,"clickerTog",false,5,function(v)ToggleAutoClicker(v)end)
-SecH(PG.Ext,T("outfitSec"),6)
-local outIL=Instance.new("TextLabel");outIL.Size=UDim2.new(1,0,0,28);outIL.BackgroundTransparency=1;outIL.Font=Enum.Font.Gotham;outIL.Text=T("outfitInfo");outIL.TextColor3=C.Sub;outIL.TextSize=10;outIL.TextWrapped=true;outIL.LayoutOrder=6;outIL.Parent=PG.Ext
-local _,cpNTB=Inp(PG.Ext,T("plHint"),8)
-Btn(PG.Ext,"copyBtn",Color3.fromRGB(145,70,218),9,function()local n=cpNTB.Text~=""and cpNTB.Text or SelPlayer;CopyOutfit(n)end)
-local mouseTpIL=Instance.new("TextLabel");mouseTpIL.Size=UDim2.new(1,0,0,25);mouseTpIL.BackgroundTransparency=1;mouseTpIL.Font=Enum.Font.Gotham;mouseTpIL.Text=T("mouseTpInfo");mouseTpIL.TextColor3=C.Warn;mouseTpIL.TextSize=10;mouseTpIL.LayoutOrder=10;mouseTpIL.Parent=PG.Ext
+local flySlider, flySliderLbl = MakeSlider(PageMovement, "FlySpeed", 5, 200, Config.FlySpeed, 4, function(v)
+	Config.FlySpeed = v
+end)
 
--- ============================================================
--- صفحة الوقت
--- ============================================================
-PgH(PG.Time,"timeTitle","timeSub",1)
-SecH(PG.Time,T("timeSec"),2)
-Tog(PG.Time,"timeTog",false,3,function(v)if v then StartTime(Cfg.TimeSpeed)else StopTime()end end)
-Sldr(PG.Time,"timeSpd",1,30,Cfg.TimeSpeed,4,function(v)Cfg.TimeSpeed=v;if Cfg.TimeOn and not AuraActive then StartTime(v)end end)
-SecH(PG.Time,T("auraSec"),5)
-local auraIL=Instance.new("TextLabel");auraIL.Size=UDim2.new(1,0,0,34);auraIL.BackgroundTransparency=1;auraIL.Font=Enum.Font.Gotham;auraIL.Text=T("auraInfo");auraIL.TextColor3=C.Sub;auraIL.TextSize=10;auraIL.TextWrapped=true;auraIL.LayoutOrder=6;auraIL.Parent=PG.Time
-local _,aZTB=Inp(PG.Time,T("auraHint"),7);aZTB.Text="AuraZone"
--- مؤشر الأورا
-local aStF=Instance.new("Frame");aStF.Size=UDim2.new(1,0,0,36);aStF.BackgroundColor3=C.Card;aStF.LayoutOrder=8;aStF.Parent=PG.Time;Cor(aStF,7);Str(aStF,C.Acc,1)
-local aDot=Instance.new("Frame");aDot.Size=UDim2.new(0,9,0,9);aDot.AnchorPoint=Vector2.new(.5,.5);aDot.Position=UDim2.new(0,20,.5,0);aDot.BackgroundColor3=C.Sub;aDot.BorderSizePixel=0;aDot.Parent=aStF;Cor(aDot,5)
-AuraLbl=Instance.new("TextLabel");AuraLbl.Size=UDim2.new(1,-38,1,0);AuraLbl.Position=UDim2.new(0,34,0,0);AuraLbl.BackgroundTransparency=1;AuraLbl.Font=Enum.Font.GothamBold;AuraLbl.Text=T("auraOff");AuraLbl.TextColor3=C.Sub;AuraLbl.TextSize=12;AuraLbl.TextXAlignment=Enum.TextXAlignment.Left;AuraLbl.Parent=aStF
-RunService.Heartbeat:Connect(function()aDot.BackgroundColor3=AuraActive and C.Warn or C.Sub end)
-local _,aTogSet,aTogLbl=Tog(PG.Time,T("auraTog"),false,9,function(v)if v then StartAura(aZTB.Text)else StopAura()end end)
+local movSec2, movSec2L = MakeSectionLabel(PageMovement, T("SectionCharacter"), 5)
 
--- ============================================================
--- صفحة الإعدادات
--- ============================================================
-PgH(PG.Set,"setTitle","setSub",1)
-SecH(PG.Set,T("genSec"),2)
-local _,afkSet,afkLbl=Tog(PG.Set,T("afkTog"),Cfg.AntiAFK,3,function(v)Cfg.AntiAFK=v end)
-SecH(PG.Set,T("dataSec"),4)
-Btn(PG.Set,T("saveCfg"),C.Acc,5,function()SaveCfg()end)
-Btn(PG.Set,T("resetDef"),C.Err,6,function()Cfg.FlySpeed=50;Cfg.WalkSpeed=16;Cfg.JumpPower=50;Cfg.MusicVol=0.5 end)
-SecH(PG.Set,T("uiSec"),7)
-Btn(PG.Set,T("hidePanel"),Color3.fromRGB(50,50,76),8,function()Tw(MP,{Position=UDim2.new(0.5,-PW/2,1.5,0)},.28,Enum.EasingStyle.Back,Enum.EasingDirection.In);task.delay(.32,function()MP.Visible=false end)end)
-SecH(PG.Set,T("langSec"),9)
-local langB=Btn(PG.Set,T("langBtn"),Color3.fromRGB(30,76,158),10,nil)
-local verL=Instance.new("TextLabel");verL.Size=UDim2.new(1,0,0,18);verL.BackgroundTransparency=1;verL.Font=Enum.Font.Gotham;verL.Text=T("ver");verL.TextColor3=C.Sub;verL.TextSize=9;verL.LayoutOrder=11;verL.Parent=PG.Set
+local _, noclipUpdate, noclipToggleLbl
+_, noclipUpdate, noclipToggleLbl = MakeToggle(PageMovement, "NoClip", false, 6, function(v)
+	if v then StartNoClip() else StopNoClip() end
+end)
 
--- تغيير اللغة
-langB.MouseButton1Click:Connect(function()
-	Lang=Lang=="AR"and"EN"or"AR"
-	-- تحديث النصوص
-	TL.Text=T("title");hS.Text=T("welcome")
-	local txts_ar={"رئيسية","حركة","حفظ","لاعبين","رادار","إضافات","وقت","إعدادات"}
-	local txts_en={"Home","Move","Saves","Players","Radar","Extras","Time","Settings"}
-	local txts=Lang=="AR"and txts_ar or txts_en
-	for i,nb in ipairs(NavBtns) do nb.tx.Text=txts[i]end
-	mHT.Text=T("movTitle");mHS.Text=T("movSub")
-	if flyLbl then flyLbl.Text=T("flyTog")end
-	if fslL then fslL.Text=T("flySpd")end
-	if ncLbl then ncLbl.Text=T("ncTog")end
-	if wslL then wslL.Text=T("walkSpd")end
-	if jslL then jslL.Text=T("jumpPow")end
-	if espLbl then espLbl.Text=T("espTog")end
-	espIL.Text=T("espInfo");if volL then volL.Text=T("vol")end
-	if invisLbl then invisLbl.Text=T("invisTog")end
-	invIL.Text=T("invisInfo");outIL.Text=T("outfitInfo")
-	if timeLbl then timeLbl.Text=T("timeTog")end
-	if tslL then tslL.Text=T("timeSpd")end
-	auraIL.Text=T("auraInfo");if aTogLbl then aTogLbl.Text=T("auraTog")end
-	if afkLbl then afkLbl.Text=T("afkTog")end
-	langB.Text=T("langBtn");verL.Text=T("ver")
-	if not AuraActive then AuraLbl.Text=T("auraOff")end
-	Tw(langB,{Size=UDim2.new(.95,0,0,BH-2)},.07);task.delay(.07,function()Tw(langB,{Size=UDim2.new(1,0,0,BH)},.1)end)
+local wsSlider, wsSliderLbl = MakeSlider(PageMovement, "WalkSpeed", 1, 200, Config.WalkSpeed, 7, function(v)
+	Config.WalkSpeed = v
+	local h = GetHumanoid()
+	if h then h.WalkSpeed = v end
+end)
+
+local jpSlider, jpSliderLbl = MakeSlider(PageMovement, "JumpPower", 1, 200, Config.JumpPower, 8, function(v)
+	Config.JumpPower = v
+	local h = GetHumanoid()
+	if h then h.JumpPower = v end
+end)
+
+local resetCharBtn = MakeButton(PageMovement, "ResetCharacter", C.Danger, 9, function()
+	local h = GetHumanoid()
+	if h then h.Health = 0 end
 end)
 
 -- ============================================================
--- تشغيل
+-- PAGE: CHECKPOINTS
 -- ============================================================
-ShowPage("Home")
-NavBtns[1].set(true)
-MP.Position=UDim2.new(0.5,-PW/2,1.5,0)
-Tw(MP,{Position=UDim2.new(0.5,-PW/2,0.5,-PH/2)},.42,Enum.EasingStyle.Back)
+
+local cpHeader, cpHeaderT, cpHeaderS = MakePageHeader(PageCheckpoints, "CheckpointsTitle", "CheckpointsSub", 1)
+local cpSlotLabels = {}
+local cpSaveBtns   = {}
+local cpLoadBtns   = {}
+
+for i = 1, 3 do
+	local _, slbl = MakeSectionLabel(PageCheckpoints, T("Slot") .. " " .. i, (i-1)*3 + 2)
+	table.insert(cpSlotLabels, slbl)
+
+	local row = Instance.new("Frame")
+	row.Size               = UDim2.new(0.97, 0, 0, 34)
+	row.BackgroundTransparency = 1
+	row.LayoutOrder        = (i-1)*3 + 3
+	row.Parent             = PageCheckpoints
+
+	local rowList = Instance.new("UIListLayout")
+	rowList.FillDirection  = Enum.FillDirection.Horizontal
+	rowList.Padding        = UDim.new(0, 6)
+	rowList.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	rowList.VerticalAlignment   = Enum.VerticalAlignment.Center
+	rowList.Parent         = row
+
+	local saveBtn = Instance.new("TextButton")
+	saveBtn.Size           = UDim2.new(0.47, 0, 0, 34)
+	saveBtn.BackgroundColor3 = C.AccentB
+	saveBtn.Font           = Enum.Font.GothamBold
+	saveBtn.Text           = T("Save")
+	saveBtn.TextColor3     = C.White
+	saveBtn.TextSize       = 12
+	saveBtn.Parent         = row
+	AddCorner(saveBtn, 7)
+	table.insert(cpSaveBtns, saveBtn)
+
+	local loadBtn = Instance.new("TextButton")
+	loadBtn.Size           = UDim2.new(0.47, 0, 0, 34)
+	loadBtn.BackgroundColor3 = C.Accent
+	loadBtn.Font           = Enum.Font.GothamBold
+	loadBtn.Text           = T("Teleport")
+	loadBtn.TextColor3     = C.White
+	loadBtn.TextSize       = 12
+	loadBtn.Parent         = row
+	AddCorner(loadBtn, 7)
+	table.insert(cpLoadBtns, loadBtn)
+
+	local slot = i
+	saveBtn.MouseButton1Click:Connect(function()
+		SaveCheckpoint(slot)
+		Tween(saveBtn, {BackgroundColor3 = C.Success}, 0.15)
+		task.delay(0.5, function() Tween(saveBtn, {BackgroundColor3 = C.AccentB}, 0.3) end)
+	end)
+	loadBtn.MouseButton1Click:Connect(function()
+		LoadCheckpoint(slot)
+	end)
+end
 
 -- ============================================================
--- END  |  THAER X100 v2.0
+-- PAGE: PLAYERS
 -- ============================================================
+
+local plHeader, plHeaderT, plHeaderS = MakePageHeader(PagePlayers, "PlayersTitle", "PlayersSub", 1)
+local plSec1, plSec1L = MakeSectionLabel(PagePlayers, T("TargetPlayer"), 2)
+
+local _, playerInput = MakeInput(PagePlayers, "PlayerNameHint", 3)
+
+local tpBtn  = MakeButton(PagePlayers, "TeleportTo",     C.Accent, 4, function()
+	local t = GetPlayerByName(playerInput.Text)
+	if t then TeleportToPlayer(t) end
+end)
+
+local flwBtn = MakeButton(PagePlayers, "FollowPlayer",   C.AccentB, 5, function()
+	local t = GetPlayerByName(playerInput.Text)
+	if t then StartFollow(t) else StopFollow() end
+end)
+
+local spcBtn = MakeButton(PagePlayers, "SpectatePlayer", Color3.fromRGB(30, 140, 100), 6, function()
+	local t = GetPlayerByName(playerInput.Text)
+	if t then StartSpectate(t) else StopSpectate() end
+end)
+
+local killBtn = MakeButton(PagePlayers, "KillTarget", C.Danger, 7, function()
+	local t = GetPlayerByName(playerInput.Text)
+	if t then KillPlayer(t) end
+end)
+
+local stopBtn = MakeButton(PagePlayers, "StopFollowSpec", Color3.fromRGB(100, 100, 120), 8, function()
+	StopFollow()
+	StopSpectate()
+end)
+
+local plSec2, plSec2L = MakeSectionLabel(PagePlayers, T("PlayerList"), 12)
+
+local playerListFrame = Instance.new("Frame")
+playerListFrame.Size          = UDim2.new(0.97, 0, 0, 100)
+playerListFrame.BackgroundColor3 = C.Card
+playerListFrame.LayoutOrder   = 13
+playerListFrame.Parent        = PagePlayers
+AddCorner(playerListFrame, 7)
+AddStroke(playerListFrame, C.Accent, 1)
+
+local plSecExtra, plSecExtraL = MakeSectionLabel(PagePlayers, T("General"), 14)
+
+local killAllBtn = MakeButton(PagePlayers, "KillAll", C.Danger, 15, function()
+	KillAllPlayers()
+end)
+
+local bringAllBtn = MakeButton(PagePlayers, "BringAll", C.AccentB, 16, function()
+	BringAllPlayers()
+end)
+
+local playerScroll = Instance.new("ScrollingFrame")
+playerScroll.Size             = UDim2.fromScale(1, 1)
+playerScroll.BackgroundTransparency = 1
+playerScroll.ScrollBarThickness = 3
+playerScroll.ScrollBarImageColor3 = C.Accent
+playerScroll.CanvasSize       = UDim2.new(0, 0, 0, 0)
+playerScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+playerScroll.Parent           = playerListFrame
+
+AddListLayout(playerScroll, 3)
+AddPadding(playerScroll, 5, 5, 7, 7)
+
+local function RefreshPlayerList()
+	for _, c in pairs(playerScroll:GetChildren()) do
+		if not c:IsA("UIListLayout") and not c:IsA("UIPadding") then c:Destroy() end
+	end
+	for _, p in pairs(Players:GetPlayers()) do
+		local row = Instance.new("TextButton")
+		row.Size              = UDim2.new(1, 0, 0, 24)
+		row.BackgroundColor3  = C.Sidebar
+		row.Font              = Enum.Font.Gotham
+		row.Text              = (p == LocalPlayer and "⭐ " or "") .. p.Name
+		row.TextColor3        = p == LocalPlayer and C.Accent or C.Text
+		row.TextSize          = 11
+		row.TextXAlignment    = Enum.TextXAlignment.Left
+		AddCorner(row, 5)
+		AddPadding(row, 0, 0, 7, 7)
+		row.Parent            = playerScroll
+		row.MouseButton1Click:Connect(function()
+			playerInput.Text  = p.Name
+		end)
+	end
+end
+
+RefreshPlayerList()
+Players.PlayerAdded:Connect(RefreshPlayerList)
+Players.PlayerRemoving:Connect(function()
+	task.wait(0.1)
+	RefreshPlayerList()
+end)
+
+-- ============================================================
+-- PAGE: ESP
+-- ========2, plSec2L = MakeSectionLabel(PagePlayers, T("PlayerList"), 12)
+
+local playerListFrame = Instance.new("Frame")
+playerListFrame.Size          = UDim2.new(0.97, 0, 0, 100)
+playerListFrame.BackgroundColor3 = C.Card
+playerListFrame.LayoutOrder   = 13
+playerListFrame.Parent        = PagePlayers
+AddCorner(playerListFrame, 7)
+AddStroke(playerListFrame, C.Accent, 1)
+
+local plSecExtra, plSecExtraL = MakeSectionLabel(PagePlayers, T("General"), 14)
+
+local killAllBtn = MakeButton(PagePlayers, "KillAll", C.Danger, 15, function()
+	KillAllPlayers()
+end)
+
+local bringAllBtn = MakeButton(PagePlayers, "BringAll", C.AccentB, 16, function()
+	BringAllPlayers()
+end)
+
+local playerScroll = Instance.new("ScrollingFrame")
+playerScroll.Size             = UDim2.fromScale(1, 1)
+playerScroll.BackgroundTransparency = 1
+playerScroll.ScrollBarThickness = 3
+playerScroll.ScrollBarImageColor3 = C.Accent
+playerScroll.CanvasSize       = UDim2.new(0, 0, 0, 0)
+playerScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+playerScroll.Parent           = playerListFrame
+
+AddListLayout(playerScroll, 3)
+AddPadding(playerScroll, 5, 5, 7, 7)
+
+local function RefreshPlayerList()
+	for _, c in pairs(playerScroll:GetChildren()) do
+		if not c:IsA("UIListLayout") and not c:IsA("UIPadding") then c:Destroy() end
+	end
+	for _, p in pairs(Players:GetPlayers()) do
+		local row = Instance.new("TextButton")
+		row.Size              = UDim2.new(1, 0, 0, 24)
+		row.BackgroundColor3  = C.Sidebar
+		row.Font              = Enum.Font.Gotham
+		row.Text              = (p == LocalPlayer and "⭐ " or "") .. p.Name
+		row.TextColor3        = p == LocalPlayer and C.Accent or C.Text
+		row.TextSize          = 11
+		row.TextXAlignment    = Enum.TextXAlignment.Left
+		AddCorner(row, 5)
+		AddPadding(row, 0, 0, 7, 7)
+		row.Parent            = playerScroll
+		row.MouseButton1Click:Connect(function()
+			playerInput.Text  = p.Name
+		end)
+	end
+end
+
+RefreshPlayerList()
+Players.PlayerAdded:Connect(RefreshPlayerList)
+Players.Pla2, plSec2L = MakeSectionLabel(PagePlayers, T("PlayerList"), 12)
+
+local playerListFrame = Instance.new("Frame")
+playerListFrame.Size          = UDim2.new(0.97, 0, 0, 100)
+playerListFrame.BackgroundColor3 = C.Card
+playerListFrame.LayoutOrder   = 13
+playerListFrame.Parent        = PagePlayers
+AddCorner(playerListFrame, 7)
+AddStroke(playerListFrame, C.Accent, 1)
+
+local plSecExtra, plSecExtraL = MakeSectionLabel(PagePlayers, T("General"), 14)
+
+local killAllBtn = MakeButton(PagePlayers, "KillAll", C.Danger, 15, function()
+	KillAllPlayers()
+end)
+
+local bringAllBtn = MakeButton(PagePlayers, "BringAll", C.AccentB, 16, function()
+	BringAllPlayers()
+end)
+
+local playerScroll = Instance.new("ScrollingFrame")
+playerScroll.Size             = UDim2.fromScale(1, 1)
+playerScroll.BackgroundTransparency = 1
+playerScroll.ScrollBarThickness = 3
+playerScroll.ScrollBarImageColor3 = C.Accent
+playerScroll.CanvasSize       = UDim2.new(0, 0, 0, 0)
+playerScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+playerScroll.Parent           = playerListFrame
+
+AddListLayout(playerScroll, 3)
+AddPadding(playerScroll, 5, 5, 7, 7)
+
+local function RefreshPlayerList()
+	for _, c in pairs(playerScroll:GetChildren()) do
+		if not c:IsA("UIListLayout") and not c:IsA("UIPadding") then c:Destroy() end
+	end
+	for _, p in pairs(Players:GetPlayers()) do
+		local row = Instance.new("TextButton")
+		row.Size              = UDim2.new(1, 0, 0, 24)
+		row.BackgroundColor3  = C.Sidebar
+		row.Font              = Enum.Font.Gotham
+		row.Text              = (p == LocalPlayer and "⭐ " or "") .. p.Name
+		row.TextColor3        = p == LocalPlayer and C.Accent or C.Text
+		row.TextSize          = 11
+		row.TextXAlignment    = Enum.TextXAlignment.Left
+		AddCorner(row, 5)
+		AddPadding(row, 0, 0, 7, 7)
+		row.Parent            = playerScroll
+		row.MouseButton1Click:Connect(function()
+			playerIn2, plSec2L = MakeSectionLabel(PagePlayers, T("PlayerList"), 12)
+
+local playerListFrame = Instance.new("Frame")
+playerListFrame.Size          = UDim2.new(0.97, 0, 0, 100)
+playerListFrame.BackgroundColor3 = C.Card
+playerListFrame.LayoutOrder   = 13
+playerListFrame.Parent        = PagePlayers
+AddCorner(playerListFrame, 7)
+AddStroke(playerListFrame, C.Accent, 1)
+
+local plSecExtra, plSecExtraL = MakeSectionLabel(PagePlayers, T("General"), 14)
+
+local killAllBtn = MakeButton(PagePlayers, "KillAll", C.Danger, 15, function()
+	KillAllPlayers()
+end)
+
+local bringAllBtn = MakeButton(PagePlayers, "BringAll", C.AccentB, 16, function()
+	BringAllPlayers()
+end)
+
+local playerScroll = Instance.new("ScrollingFrame")
+playerScroll.Size             = UDim2.fromScale(1, 1)
+playerScroll.BackgroundTransparency = 1
+playerScroll.ScrollBarThickness = 3
+playerScroll.ScrollBarImageColor3 = C.Accent
+playerScroll.CanvasSize       = UDim2.new(0, 0, 0, 0)
+playerScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+playerScroll.Parent           = playerListFrame
+
+AddListLayout(playerScroll, 3)
+AddPadding(playerScroll, 5, 5, 7, 7)
+
+local function RefreshPlayerList()
+	for _, c in pairs(playerScroll:GetChildren()) do
+		if not c:IsA("UIListLayout") and not c:IsA("UIPadding") then c:Destroy() end
+	end2, plSec2L = MakeSectionLabel(PagePlayers, T("PlayerList"), 12)
+
+local playerListFrame = Instance.new("Frame")
+playerListFrame.Size          = UDim2.new(0.97, 0, 0, 100)
+playerListFrame.BackgroundColor3 = C.Card
+playerListFrame.LayoutOrder   = 13
+playerListFrame.Parent        = PagePlayers
+AddCorner(playerListFrame, 7)
+AddStroke(playerListFrame, C.Accent, 1)
+
+local plSecExtra, plSecExtraL = MakeSectionLabel(PagePlayers, T("General"), 14)
+
+local killAllBtn = MakeButton(PagePlayers, "KillAll", C.Danger, 15, function()
+	KillAllPlayers()
+end)
+
+local bringAllBtn = MakeButton(PagePlayers, "BringAll", C.AccentB, 16, function()
+	BringAllPlayers()
+end)
+
+local playerScroll = Instance.new("ScrollingFrame")
+playerScroll.Size             = UDim2.fromScale(1, 1)
+playerScroll.BackgroundTransparency = 1
+playerScroll.ScrollBarThickness = 3
+playerScroll.ScrollBarImageColor3 = C.Accent
+playerScroll.CanvasSize       = UDim2.new(0, 0, 0, 0)
+playerScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+playerScroll.Parent           = playerListFrame
+
+AddListLayout(playerScroll, 3)
+AddPadding(playerScroll, 5, 5, 7, 7)
+
+local function RefreshPlayerList()
+	for _, c in pairs(playerScroll:GetChildren()) do
+		if not c:IsA("UIListLayout") and not c:IsA("UIPadding") then c:Destroy() end
+	end2, plSec2L = MakeSectionLabel(PagePlayers, T("PlayerList"), 12)
+
+local playerListFrame = Instance.new("Frame")
+playerListFrame.Size          = UDim2.new(0.97, 0, 0, 100)
+playerListFrame.BackgroundColor3 = C.Card
+playerListFrame.LayoutOrder   = 13
+playerListFrame.Parent        = PagePlayers
+AddCorner(playerListFrame, 7)
+AddStroke(playerListFrame, C.Accent, 1)
+
+local plSecExtra, plSecExtraL = MakeSectionLabel(PagePlayers, T("General"), 14)
+
+local killAllBtn = MakeButton(PagePlayers, "KillAll", C.Danger, 15, function()
+	KillAllPlayers()
+end)
+
+local bringAllBtn = MakeButton(PagePlayers, "BringAll", C.AccentB, 16, function()
+	BringAllPlayers()
+end)
+
+local playerScroll = Instance.new("ScrollingFrame")
+playerScroll.Size             = UDim2.fromScale(1, 1)
+playerScroll.BackgroundTransparency = 1
+playerScroll.ScrollBarThickness = 3
+playerScroll.ScrollBarImageColor3 = C.Accent
+playerScroll.CanvasSize       = UDim2.new(0, 0, 0, 0)
+playerScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+playerScroll.Parent           = playerListFrame
+2, plSec2L = MakeSectionLabel(PagePlayers, T("PlayerList"), 12)
+
+local playerListFrame = Instance.new("Frame")
+playerListFrame.Size          = UDim2.new(0.97, 0, 0, 100)
+playerListFrame.BackgroundColor3 = C.Card
+playerListFrame.LayoutOrder   = 13
+playerListFrame.Parent        = PagePlayers
+AddCorner(playerListFrame, 7)
+AddStroke(playerListFrame, C.Accent, 1)
+
+local plSecExtra, plSecExtraL = MakeSectionLabel(PagePlayers, T("General"), 14)
+
+local killAllBtn = MakeButton(PagePlayers, "KillAll", C.Danger, 15, function()
+	KillAllPlayers()
+end)
+
+local bringAllBtn = MakeButton(PagePlayers, "BringAll", C.AccentB, 16, function()
+	BringAllPlayers()
+end)
+
+local playerScroll = Instance.new("ScrollingFrame")
+playerScrol2, plSec2L = MakeSectionLabel(PagePlayers, T("PlayerList"), 12)
+
+local playerListFrame = Instance.new("Frame")
+playerListFrame.Size          = UDim2.new(0.97, 0, 0, 100)
+playerListFrame.BackgroundColor3 = C.Card
+playerListFrame.LayoutOrder   = 13
+playerListFrame.Parent        = PagePlayers
+AddCorner(playerListFrame, 7)
+AddStroke(playerListFrame, C.Accent, 1)
+
+local plSecExtra, plSecExtraL = MakeSectionLabel(PagePlayers, T("General"), 14)
+
+local killAllBtn = MakeButton(PagePlayers, "KillAll", C.Danger, 15, function()
+	KillAllPlayers()
+end)
+
+local bringAllBtn = MakeButton(PagePlayers, "BringAll", C.AccentB, 16, function()
+	BringAllPlayers()
+end)
+
+local playerScroll = Instance.new("ScrollingFrame")
+playerScrol2, plSec2L = MakeSectionLabel(PagePlayers, T("PlayerList"), 12)
+
+local playerListFrame = Instance.new("Frame")
+playerListFrame.Size          = UDim2.new(0.97, 0, 0, 100)
+playerListFrame.BackgroundColor3 = C.Card
+playerListFrame.LayoutOrder   = 13
+playerListFrame.Parent        = PagePlayers
+AddCorner(playerListFrame, 7)
+AddStroke(playerListFrame, C.Accent, 1)
+
+local plSecExtra, plSecExtraL = MakeSectionLabel(PagePlayers, T("General"), 14)
+
+local killAllBtn = MakeButton(PagePlayers, "KillAll", C.Danger, 15, function()
+	KillAllPlayers()
+end)
+
+local bringAllBtn = MakeButton(PagePlayers, "BringAll", C.AccentB, 16, function()
+	BringAllPlayers()
+end)
+
+local playerScroll = Instance.new("ScrollingFrame")
+playerScrol2, plSec2L = MakeSectionLabel(PagePlayers, T("PlayerList"), 12)
+
+local playerListFrame = Instance.new("Frame")
+playerListFrame.Size          = UDim2.new(0.97, 0, 0, 100)
+playerListFrame.BackgroundColor3 = C.Card
+playerListFrame.LayoutOrder   = 13
+playerListFrame.Parent        = PagePlayers
+AddCorner(playerListFrame, 7)
+AddStroke(playerListFrame, C.Accent, 1)
+
+local plSecExtra, plSecExtraL = MakeSectionLabel(PagePlayers, T("General"), 14)
+
+local killAllBtn = MakeButton(PagePlayers, "KillAll", C.Danger, 15, function()
+	KillAllPlayers()
+end)2, plSec2L = MakeSectionLabel(PagePlayers, T("PlayerList"), 12)
+
+local playerListFrame = Instance.new("Frame")
+playerListFrame.Size          = UDim2.new(0.97, 0, 0, 100)
+playerListFrame.BackgroundColor3 = C.Card
+playerListFrame.LayoutOrder   = 13
+playerListFrame.Parent        = PagePlayers
+AddCorner(playerListFrame, 7)
+AddStroke(playerListFrame, C.Accent, 1)
+
+local plSecExtra, plSecExtraL = MakeSectionLabel(PagePlayers, T("General"), 14)
+
+local killAllBtn = MakeButton(PagePlayers, "KillAll", C.Danger, 15, function()
+	KillAllPlayers()
+end)icVolume = v / 100
+	if ActiveMusic then ActiveMusic.Volume = Config.MusicVolume end
+end)
+
+local playMusicBtn = MakeButton(PageESP, "PlayMusic", C.Success, 8, function()
+	local id = tonumber(musicInput.Text)
+	if id then PlayMusic(id, Config.MusicVolume) end
+end)
+
+local stopMusicBtn = MakeButton(PageESP, "StopMusic", C.Danger, 9, function()
+	StopMusic()
+end)
+
+-- ============================================================
+-- PAGE: EXTERNAL SCRIPTS
+-- ============================================================
+
+local extSec1, extSec1L = MakeSectionLabel(PageExternalScripts, T("Scripts"), 1)
+
+local crypticBtn = MakeButton(PageExternalScripts, "Cryptic", C.AccentB, 2, function()
+	task.spawn(function()
+		local ok, err = pcall(function()
+			loadstring(game:HttpGet("https://raw.githubusercontent.com/OnlyCryptic/Cryptic/main/main.lua"))()
+		end)
+		if not ok then warn("[THAER X100] Cryptic script failed: " .. tostring(err)) end
+	end)
+end)
+
+local animationsBtn = MakeButton(PageExternalScripts, "Animations", C.Accent, 3, function()
+	task.spawn(function()
+		local ok, err = pcall(function()
+			local src = ""
+			local CoreGui = game:GetService("StarterGui")
+
+			pcall(function()
+			src = game:HttpGet("https://yarhm.com/scr?channel=afemmax", false)
+			end)
+
+			if src == "" then
+			CoreGui:SetCore("SendNotification", {
+			Title = "YARHM Outage";
+			Text = "YARHM Online is currently unavailable! Using backup.";
+			Duration = 5;
+			})
+
+			src = game:HttpGet("https://raw.githubusercontent.com/Joystickplays/AFEM/refs/heads/main/max/afemmax.lua", false)
+			end
+
+			loadstring(src)()
+		end)
+
+		if not ok then
+			warn("[THAER X100] Animations script failed: " .. tostring(err))
+		end
+	end)
+end)
+
+-- ============================================================
+-- PAGE: SETTINGS
+-- ============================================================
+
+local setHeader, setHeaderT, setHeaderS = MakePageHeader(PageSettings, "SettingsTitle", "SettingsSub", 1)
+local setSec1, setSec1L = MakeSectionLabel(PageSettings, T("General"), 2)
+
+local _, antiAFKUpdate, antiAFKLbl
+_, antiAFKUpdate, antiAFKLbl = MakeToggle(PageSettings, "AntiAFK", Config.AntiAFKEnabled, 3, function(v)
+	Config.AntiAFKEnabled = v
+end)
+
+local setSec2, setSec2L = MakeSectionLabel(PageSettings, T("Data"), 4)
+
+local saveSetBtn = MakeButton(PageSettings, "SaveSettings", C.Accent, 5, function()
+	SaveSettings()
+end)
+
+local resetSetBtn = MakeButton(PageSettings, "ResetDefaults", C.Danger, 6, function()
+	Config.FlySpeed    = 40
+	Config.WalkSpeed   = 16
+	Config.JumpPower   = 50
+	Config.MusicVolume = 0.5
+end)
+
+local setSec3, setSec3L = MakeSectionLabel(PageSettings, T("UI"), 7)
+
+local hidePanelBtn = MakeButton(PageSettings, "HidePanel", Color3.fromRGB(60, 60, 80), 8, function()
+	Tween(MainPanel, {Position = UDim2.new(0.5, 0, 1.5, 0)}, 0.35, Enum.EasingStyle.Back, Enum.EasingDirection.In)
+	task.delay(0.4, function() MainPanel.Visible = false end)
+end)
+
+local setSec4, setSec4L = MakeSectionLabel(PageSettings, T("Language"), 9)
+
+local langBtn = MakeButtonRaw(PageSettings, T("LangToggle"), Color3.fromRGB(40, 80, 160), 10, nil)
+
+local versionLbl = Instance.new("TextLabel")
+versionLbl.Size             = UDim2.new(0.97, 0, 0, 22)
+versionLbl.BackgroundTransparency = 1
+versionLbl.Font             = Enum.Font.Gotham
+versionLbl.Text             = T("Version")
+versionLbl.TextColor3       = C.SubText
+versionLbl.TextSize         = 9
+versionLbl.LayoutOrder      = 11
+versionLbl.Parent           = PageSettings
+
+-- ============================================================
+-- LANGUAGE REFRESH FUNCTION (Moved here to fix Scoping)
+-- ============================================================
+
+local function ApplyLanguage()
+	local isAR = IsArabic()
+	local align = GetTextAlign()
+
+	-- Sidebar nav labels
+	for _, nb in ipairs(navBtns) do
+		nb.lbl.Text = T(nb.labelKey)
+	end
+
+	-- Home page
+	infoTxt.Text           = T("WelcomeMsg")
+	infoTxt.TextXAlignment = align
+	for _, sv in ipairs(statValueLabels) do
+		sv.ll.Text = T(sv.si.lbl)
+	end
+
+	-- Movement page
+	movHeaderT.Text        = T("MovementTitle")
+	movHeaderT.TextXAlignment = align
+	movHeaderS.Text        = T("MovementSub")
+	movHeaderS.TextXAlignment = align
+	movSec1L.Text          = "▸  " .. T("SectionFlight"):upper()
+	movSec2L.Text          = "▸  " .. T("SectionCharacter"):upper()
+	if flyToggleLbl   then flyToggleLbl.Text   = T("FlyMode")   ; flyToggleLbl.TextXAlignment   = align end
+	if noclipToggleLbl then noclipToggleLbl.Text = T("NoClip")  ; noclipToggleLbl.TextXAlignment  = align end
+	if flySliderLbl   then flySliderLbl.Text    = T("FlySpeed") ; flySliderLbl.TextXAlignment    = align end
+	if wsSliderLbl    then wsSliderLbl.Text     = T("WalkSpeed"); wsSliderLbl.TextXAlignment     = align end
+	if jpSliderLbl    then jpSliderLbl.Text     = T("JumpPower"); jpSliderLbl.TextXAlignment     = align end
+	resetCharBtn.Text      = T("ResetCharacter")
+
+	-- Checkpoints page
+	cpHeaderT.Text         = T("CheckpointsTitle")
+	cpHeaderT.TextXAlignment = align
+	cpHeaderS.Text         = T("CheckpointsSub")
+	cpHeaderS.TextXAlignment = align
+	for i, lbl in ipairs(cpSlotLabels) do
+		lbl.Text = "▸  " .. (T("Slot") .. " " .. i):upper()
+	end
+	for _, b in ipairs(cpSaveBtns) do b.Text = T("Save") end
+	for _, b in ipairs(cpLoadBtns) do b.Text = T("Teleport") end
+
+	-- Players page
+	plHeaderT.Text         = T("PlayersTitle")
+	plHeaderT.TextXAlignment = align
+	plHeaderS.Text         = T("PlayersSub")
+	plHeaderS.TextXAlignment = align
+	plSec1L.Text           = "▸  " .. T("TargetPlayer"):upper()
+	plSec2L.Text           = "▸  " .. T("PlayerList"):upper()
+	playerInput.PlaceholderText = T("PlayerNameHint")
+	playerInput.TextXAlignment  = align
+	tpBtn.Text             = T("TeleportTo")
+	flwBtn.Text            = T("FollowPlayer")
+	spcBtn.Text            = T("SpectatePlayer")
+	stopBtn.Text           = T("StopFollowSpec")
+
+	-- ESP page
+	espHeaderT.Text        = T("ESPTitle")
+	espHeaderT.TextXAlignment = align
+	espHeaderS.Text        = T("ESPSub")
+	espHeaderS.TextXAlignment = align
+	espSec1L.Text          = "▸  " .. T("PlayerOverlay"):upper()
+	espSec2L.Text          = "▸  " .. T("MusicPlayer"):upper()
+	if espToggleLbl  then espToggleLbl.Text  = T("ShowNamesDist"); espToggleLbl.TextXAlignment  = align end
+	espInfo.Text           = T("ESPInfo")
+	espInfo.TextXAlignment = align
+	musicInput.PlaceholderText = T("SoundIDHint")
+	musicInput.TextXAlignment  = align
+	if volSliderLbl  then volSliderLbl.Text  = T("Volume")  ; volSliderLbl.TextXAlignment  = align end
+	playMusicBtn.Text      = T("PlayMusic")
+	stopMusicBtn.Text      = T("StopMusic")
+
+	-- External scripts page
+	extSec1L.Text          = "▸  " .. T("Scripts"):upper()
+	animationsBtn.Text     = T("Animations")
+	crypticBtn.Text        = T("Cryptic")
+
+	-- Settings page
+	setHeaderT.Text        = T("SettingsTitle")
+	setHeaderT.TextXAlignment = align
+	setHeaderS.Text        = T("SettingsSub")
+	setHeaderS.TextXAlignment = align
+	setSec1L.Text          = "▸  " .. T("General"):upper()
+	setSec2L.Text          = "▸  " .. T("Data"):upper()
+	setSec3L.Text          = "▸  " .. T("UI"):upper()
+	setSec4L.Text          = "▸  " .. T("Language"):upper()
+	if antiAFKLbl    then antiAFKLbl.Text    = T("AntiAFK") ; antiAFKLbl.TextXAlignment    = align end
+	saveSetBtn.Text        = T("SaveSettings")
+	resetSetBtn.Text       = T("ResetDefaults")
+	hidePanelBtn.Text      = T("HidePanel")
+	langBtn.Text           = T("LangToggle")
+	versionLbl.Text        = T("Version")
+end
+
+-- تشغيل الترجمة فوراً عند التحميل بعد تعريف كل الأزرار
+ApplyLanguage()
+
+-- Language toggle button callback
+langBtn.MouseButton1Click:Connect(function()
+	Tween(langBtn, {Size = UDim2.new(0.93, 0, 0, 31)}, 0.07)
+	task.delay(0.07, function() Tween(langBtn, {Size = UDim2.new(0.97, 0, 0, 34)}, 0.1) end)
+	CurrentLanguage = (CurrentLanguage == "EN") and "AR" or "EN"
+	ApplyLanguage()
+end)
+
+-- ============================================================
+-- DRAG MAIN PANEL
+-- ============================================================
+
+do
+	local dragging, dragStart, startPos
+	TitleBar.InputBegan:Connect(function(i)
+		if i.UserInputType == Enum.UserInputType.MouseButton1 or
+		   i.UserInputType == Enum.UserInputType.Touch then
+			dragging  = true
+			dragStart = i.Position
+			startPos  = MainPanel.Position
+		end
+	end)
+	UserInputService.InputChanged:Connect(function(i)
+		if dragging and (i.UserInputType == Enum.UserInputType.MouseMovement or
+			i.UserInputType == Enum.UserInputType.Touch) then
+			local delta = i.Position - dragStart
+			MainPanel.Position = UDim2.new(
+				startPos.X.Scale, startPos.X.Offset + delta.X,
+				startPos.Y.Scale, startPos.Y.Offset + delta.Y
+			)
+		end
+	end)
+	UserInputService.InputEnded:Connect(function(i)
+		if i.UserInputType == Enum.UserInputType.MouseButton1 or
+		   i.UserInputType == Enum.UserInputType.Touch then
+			dragging = false
+		end
+	end)
+end
+
+-- ============================================================
+-- CLOSE / MINIMIZE / SHOW
+-- ============================================================
+
+local function ShowPanel()
+	MainPanel.Visible = true
+	MainPanel.Position = UDim2.new(0.5, 0, 1.5, 0)
+	Tween(MainPanel, {Position = UDim2.new(0.5, 0, 0.5, 0)}, 0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+end
+
+CloseBtn.MouseButton1Click:Connect(function()
+	Tween(MainPanel, {Position = UDim2.new(0.5, 0, 1.5, 0)}, 0.35, Enum.EasingStyle.Back, Enum.EasingDirection.In)
+	task.delay(0.4, function() MainPanel.Visible = false end)
+end)
+
+MinBtn.MouseButton1Click:Connect(function()
+	Tween(MainPanel, {Position = UDim2.new(0.5, 0, 1.5, 0)}, 0.35, Enum.EasingStyle.Back, Enum.EasingDirection.In)
+	task.delay(0.4, function() MainPanel.Visible = false end)
+end)
+
+-- ============================================================
+-- FLOATING REOPEN BUTTON
+-- ============================================================
+
+local FloatBtn = Instance.new("TextButton")
+FloatBtn.Name              = "FloatBtn"
+FloatBtn.Size              = UDim2.new(0, 42, 0, 42)
+FloatBtn.Position          = UDim2.new(0, 10, 0.5, -21)
+FloatBtn.BackgroundColor3  = C.Accent
+FloatBtn.Font              = Enum.Font.GothamBold
+FloatBtn.Text              = "TX"
+FloatBtn.TextColor3        = C.White
+FloatBtn.TextSize          = 12
+FloatBtn.Visible           = true
+FloatBtn.Parent            = ScreenGui
+AddCorner(FloatBtn, 21)
+AddStroke(FloatBtn, C.AccentB, 1.5)
+
+local function PulseFloat()
+	Tween(FloatBtn, {BackgroundColor3 = C.AccentB}, 1, Enum.EasingStyle.Sine)
+	task.delay(1, function()
+		Tween(FloatBtn, {BackgroundColor3 = C.Accent}, 1, Enum.EasingStyle.Sine)
+		task.delay(1, PulseFloat)
+	end)
+end
+PulseFloat()
+
+FloatBtn.MouseButton1Click:Connect(function()
+	if MainPanel.Visible then
+		Tween(MainPanel, {Position = UDim2.new(0.5, 0, 1.5, 0)}, 0.35, Enum.EasingStyle.Back, Enum.EasingDirection.In)
+		task.delay(0.4, function() MainPanel.Visible = false end)
+	else
+		ShowPanel()
+	end
+end)
+
+do
+	local dragging, dragStart, startPos
+	FloatBtn.InputBegan:Connect(function(i)
+		if i.UserInputType == Enum.UserInputType.MouseButton1 or
+		   i.UserInputType == Enum.UserInputType.Touch then
+			dragging  = true
+			dragStart = i.Position
+			startPos  = FloatBtn.Position
+		end
+	end)
+	UserInputService.InputChanged:Connect(function(i)
+		if dragging and (i.UserInputType == Enum.UserInputType.MouseMovement or
+			i.UserInputType == Enum.UserInputType.Touch) then
+			local delta = i.Position - dragStart
+			FloatBtn.Position = UDim2.new(
+				startPos.X.Scale, startPos.X.Offset + delta.X,
+				startPos.Y.Scale, startPos.Y.Offset + delta.Y
+			)
+		end
+	end)
+	UserInputService.InputEnded:Connect(function(i)
+		if i.UserInputType == Enum.UserInputType.MouseButton1 or
+		   i.UserInputType == Enum.UserInputType.Touch then
+			dragging = false
+		end
+	end)
+end
+
+-- ============================================================
+-- SPLASH ANIMATION → SHOW MAIN
+-- ============================================================
+
+task.spawn(function()
+	logoFrame.Position         = UDim2.new(0.5, 0, 0.55, 0)
+	logoFrame.BackgroundTransparency = 1
+	logoText.TextTransparency  = 1
+	logoSub.TextTransparency   = 1
+
+	Tween(logoText, {TextTransparency = 0}, 0.7)
+	task.wait(0.3)
+	Tween(logoSub,  {TextTransparency = 0}, 0.5)
+	Tween(logoFrame, {Position = UDim2.new(0.5, 0, 0.42, 0)}, 0.6, Enum.EasingStyle.Back)
+
+	task.wait(0.4)
+
+	local totalSteps = #loadingMessages
+	for idx, msg in ipairs(loadingMessages) do
+		loadingLbl.Text = msg
+		local pct = idx / totalSteps
+		Tween(barFill, {Size = UDim2.new(pct, 0, 1, 0)}, 0.3)
+		task.wait(0.26)
+	end
+
+	task.wait(0.3)
+
+	Tween(Splash, {BackgroundTransparency = 1}, 0.5)
+	for _, d in pairs(Splash:GetDescendants()) do
+		if d:IsA("TextLabel") or d:IsA("Frame") then
+			pcall(function() Tween(d, {BackgroundTransparency = 1}, 0.4) end)
+			pcall(function() Tween(d, {TextTransparency = 1}, 0.4) end)
+		end
+	end
+	task.wait(0.55)
+	Splash:Destroy()
+
+	ShowPage("Home")
+	ShowPanel()
+end)
+
+-- ============================================================
+-- KEYBIND: Right Alt toggles panel
+-- ============================================================
+
+UserInputService.InputBegan:Connect(function(i, gp)
+	if gp then return end
+	if i.KeyCode == Enum.KeyCode.RightAlt then
+		if MainPanel.Visible then
+			Tween(MainPanel, {Position = UDim2.new(0.5, 0, 1.5, 0)}, 0.35, Enum.EasingStyle.Back, Enum.EasingDirection.In)
+			task.delay(0.4, function() MainPanel.Visible = false end)
+		else
+			ShowPanel()
+		end
+	end
+end)
