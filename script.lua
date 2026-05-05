@@ -505,7 +505,7 @@ end
 local function ApplyStealthToInstance(inst)
 	if IsStealthVisual(inst) then
 		if StealthOriginals[inst] == nil then
-			StealthOriginals[inst] = inst.Transparency
+			StealthOriginals[inst] = inst.Transparency or 0
 		end
 		inst.Transparency = 1
 	end
